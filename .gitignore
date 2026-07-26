@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.DS_Store
+node_modules/
+.workbuddy/
+tools/
+data/
+dist/
+dist.zip
+PRD-*.md
+js/vendor_three.js
