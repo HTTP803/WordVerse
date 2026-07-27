@@ -13,7 +13,7 @@ const gold = new THREE.Color(0xffd24a);
 // 图例分类：记忆掌握度（数据来自本地 FSRS 状态，随学习实时变化）
 const STATUS = { new: { name: "未学", color: 0x6f8bd6 }, learning: { name: "学习中", color: 0x19c3c3 }, mastered: { name: "已掌握", color: 0xffd24a } };
 const STATUS_COLOR = { new: new THREE.Color(STATUS.new.color), learning: new THREE.Color(STATUS.learning.color), mastered: gold };
-function statusOf(w) { const r = sr[w.w]; if (!r || r.s === 0) return "new"; if (r.s === 2) return "mastered"; return "learning"; }
+function statusOf(w) { const r = sr[w]; if (!r || r.s === 0) return "new"; if (r.s === 2) return "mastered"; return "learning"; }   // w=单词字符串（sr 系函数统一用字符串 key）
 const LIB_KEY = "wordverse_lib";                 // 当前词库
 const litKey = id => "wordverse_lit_" + id;      // 各库进度隔离
 
@@ -329,18 +329,24 @@ function toggleLit(i) {
   updateHud(); showCard(s);
 }
 // ---------- 记忆闭环（本地 FSRS-lite）----------
-function loadSR() { sr = JSON.parse(localStorage.getItem(srKey(cur)) || "{}"); }
+function loadSR() {
+  sr = JSON.parse(localStorage.getItem(srKey(cur)) || "{}");
+  delete sr.undefined;   // 清理历史 bug 写入的脏 key（曾把所有词的记录写到同一个 undefined）
+  let fix = false;       // 迁移：已点亮但缺 sr 记录的词补成"学习中"，恢复星色/图例
+  lit.forEach(w => { if (!sr[w]) { sr[w] = { s: 1, d: 5, reps: 1, ivl: 1, due: Date.now() + DAY }; fix = true; } });
+  if (fix) saveSR();
+}
 function saveSR() { localStorage.setItem(srKey(cur), JSON.stringify(sr)); }
-function srInit(w) { if (!sr[w.w]) sr[w.w] = { s: 0, d: 5, reps: 0, ivl: 0, due: 0 }; }
+function srInit(w) { if (!sr[w]) sr[w] = { s: 0, d: 5, reps: 0, ivl: 0, due: 0 }; }   // w=字符串
 function srReview(w, ok) {
-  srInit(w); const r = sr[w.w];
+  srInit(w); const r = sr[w];
   if (ok) {
     r.ivl = r.s === 0 ? 1 : Math.max(1, Math.round(r.ivl * (r.reps >= 1 ? 2.5 : 1.5) * (1 + (5 - r.d) / 10)));
     r.d = Math.max(1, r.d - 1); r.s = r.ivl >= 21 ? 2 : 1;
   } else { r.ivl = 1; r.d = Math.min(10, r.d + 1); r.s = 1; }
   r.reps++; r.due = Date.now() + r.ivl * DAY; saveSR();
 }
-function srDelete(w) { delete sr[w.w]; saveSR(); }
+function srDelete(w) { delete sr[w]; saveSR(); }
 function dueCount() {
   let n = 0;
   core.forEach(s => { const r = sr[s.word.w]; if (!r || r.s === 0 || r.due <= Date.now()) n++; });
@@ -488,7 +494,7 @@ function submitSpell() {
   feedback(correct, w);
 }
 function feedback(correct, w) {
-  srReview(w, correct);
+  srReview(w.w, correct);
   const i = core.findIndex(s => s.word.w === w.w); if (i >= 0) setStarLit(i, correct);
   correct ? qOkN++ : qNoN++;
   touchStreak();
