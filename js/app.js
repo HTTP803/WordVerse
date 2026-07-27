@@ -6,7 +6,7 @@ function loadError(msg) {
 window.addEventListener("error", ev => loadError(ev.message || "脚本运行出错"));
 if (typeof THREE === "undefined") { loadError("3D 引擎未加载（js/vendor/three.min.js 缺失或被拦截）"); throw new Error("THREE missing"); }
 
-const APP_VERSION = "1.8.4";
+const APP_VERSION = "1.9.0";
 const DAILY_GOAL = 20; // 每日任务目标词数（须在初始化 updateHud 前声明，避免 TDZ）
 const R = 640;                                   // 家族分布球壳半径
 const gold = new THREE.Color(0xffd24a);
@@ -430,7 +430,26 @@ function openAch() {
   document.getElementById("ach").style.display = "flex";
 }
 
+// ---------- 背景天体（太阳/月亮/远景恒星，可开关，不干扰单词星）----------
+let celGroup = null;
+function glowTex(stops){ const c=document.createElement("canvas"); c.width=c.height=128; const x=c.getContext("2d"), g=x.createRadialGradient(64,64,0,64,64,64); stops.forEach(s=>g.addColorStop(s[0],s[1])); x.fillStyle=g; x.fillRect(0,0,128,128); return new THREE.CanvasTexture(c); }
+function celSprite(tex,size,pos){ const m=new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:false,depthWrite:false,blending:THREE.AdditiveBlending}); const s=new THREE.Sprite(m); s.scale.set(size,size,1); s.position.set(pos[0],pos[1],pos[2]); s.renderOrder=-10; return s; }
+function createCelestial(){
+  if(celGroup){ scene.remove(celGroup); celGroup.traverse(o=>o.material&&o.material.dispose()); }
+  celGroup=new THREE.Group();
+  celGroup.add(celSprite(glowTex([[0,"rgba(255,228,150,.95)"],[.25,"rgba(255,180,80,.55)"],[.6,"rgba(255,140,60,.12)"],[1,"rgba(255,120,40,0)"]]),760,[200,160,-2500]));
+  celGroup.add(celSprite(glowTex([[0,"rgba(225,235,255,.9)"],[.3,"rgba(180,200,240,.4)"],[.65,"rgba(150,175,225,.1)"],[1,"rgba(120,150,210,0)"]]),440,[-1700,360,-2100]));
+  const N=26,p=new Float32Array(N*3);
+  for(let i=0;i<N;i++){ const rr=2200+Math.random()*900,u=Math.random()*2-1,t=Math.random()*Math.PI*2,f=Math.sqrt(1-u*u); p[i*3]=rr*f*Math.cos(t); p[i*3+1]=rr*f*Math.sin(t); p[i*3+2]=rr*u; }
+  const g=new THREE.BufferGeometry(); g.setAttribute("position",new THREE.BufferAttribute(p,3));
+  const m=new THREE.PointsMaterial({color:0xbfc8ff,size:26,sizeAttenuation:true,transparent:true,opacity:.8,depthTest:false,depthWrite:false,blending:THREE.AdditiveBlending});
+  const stars=new THREE.Points(g,m); stars.renderOrder=-11; celGroup.add(stars);
+  scene.add(celGroup);
+  celGroup.visible = localStorage.getItem("wordverse_cel")!=="0";
+  updateCelBtn();
+}
 // ---------- 进场动画 + 渲染循环 ----------
+createCelestial();
 buildLibrary(cur);
 function loop() {
   requestAnimationFrame(loop);
@@ -726,6 +745,8 @@ function closeTut() { tutEl.style.display = "none"; const v = $("tutVideo"); if 
 $("achBtn").onclick = openAch; $("rankLine").onclick = openAch;
 $("achClose").onclick = () => $("ach").style.display = "none";
 $("ach").addEventListener("click", e => { if (e.target === $("ach")) $("ach").style.display = "none"; });
+function updateCelBtn(){ const b=$("celBtn"); if(!b) return; const on=!celGroup||celGroup.visible; b.textContent=on?"🌟 天体":"🌑 天体"; b.style.opacity=on?"1":".5"; }
+$("celBtn").onclick = () => { if(!celGroup) return; celGroup.visible=!celGroup.visible; localStorage.setItem("wordverse_cel",celGroup.visible?"1":"0"); updateCelBtn(); };
 $("helpBtn").onclick = openTut;
 $("tutClose").onclick = closeTut;
 $("tutPrev").onclick = () => { if (ti > 0) { ti--; renderTut(); } };
