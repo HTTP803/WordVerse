@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>星云词汇 · 考研/四级/六级/高考 3D 星空 v1.9.1</title>
-<!-- 星云词汇 v1.9.1 · 灵感来自「诗云」· 多词库：考研(英一/二通用) / 英语四级 / 英语六级 / 高考 · 记忆闭环 + 主动学习/复习 + 每日任务 + 称号成就激励 + 分享卡 + 使用教学 + 移动端 · 作者个人站 vinjour.top · 本地化 three.js 无需 CDN -->
+<title>星云词汇 · 考研/四级/六级/高考 3D 星空 v1.9.2</title>
+<!-- 星云词汇 v1.9.2 · 灵感来自「诗云」· 多词库：考研(英一/二通用) / 英语四级 / 英语六级 / 高考 · 记忆闭环 + 主动学习/复习 + 每日任务 + 称号成就激励 + 分享卡 + 使用教学 + 移动端 · 作者个人站 vinjour.top · 本地化 three.js 无需 CDN -->
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { width: 100%; height: 100%; overflow: hidden; background: #05060f; font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; color: #e8ecff; }
@@ -152,6 +152,7 @@
   #tut .nav .next:hover { background: #948dea; }
   #tut .nav .prev:disabled { opacity: .4; cursor: default; }
   @media (max-width: 640px){
+    #search{top:52px;width:calc(100vw - 24px)}
     #helpBtn{font-size:12px;padding:6px 10px;margin-top:7px}
     #title{top:12px;left:12px} #title h1{font-size:15px} #title .sub{font-size:10px} #title .home{font-size:10px;margin-top:5px;padding:4px 9px}
     #hud{top:12px;right:12px} #hud .num{font-size:20px}
@@ -165,6 +166,13 @@
     #quiz{width:calc(100vw - 24px);left:50%;transform:translate(-50%,-50%)}
     #share{width:calc(100vw - 24px);left:50%;transform:translate(-50%,-50%)}
   }
+  #search{position:fixed;top:62px;left:50%;transform:translateX(-50%);width:min(92vw,380px);z-index:6;display:flex;flex-direction:column;gap:4px}
+  #search input{width:100%;box-sizing:border-box;padding:8px 14px;font-size:13px;color:#e8ecff;background:rgba(13,15,32,.72);border:1px solid rgba(127,119,221,.3);border-radius:999px;outline:none}
+  #search input:focus{border-color:rgba(255,210,74,.6)}
+  #searchHint{display:none;background:rgba(16,18,38,.96);border:1px solid rgba(127,119,221,.3);border-radius:12px;overflow:hidden;max-height:240px;overflow-y:auto;margin-top:2px}
+  #searchHint .si{padding:8px 14px;font-size:13px;color:#c8cdf0;cursor:pointer;border-bottom:1px solid rgba(127,119,221,.12)}
+  #searchHint .si:hover{background:rgba(127,119,221,.18);color:#fff}
+  #searchHint .si:last-child{border-bottom:none}
 </style>
 </head>
 <body>
@@ -172,10 +180,14 @@
 <div id="loading"><div class="spin"></div><div class="txt">正在生成词汇星空…</div></div>
 <div id="title" class="panel">
   <h1>星云词汇</h1>
-  <div class="sub">考研(英一/二通用) · 四级 · 六级 · 高考 · 主动学习 + 每日任务 · v1.9.1</div>
+  <div class="sub">考研(英一/二通用) · 四级 · 六级 · 高考 · 主动学习 + 每日任务 · v1.9.2</div>
   <a class="home" href="https://vinjour.top/" target="_blank" rel="noopener" title="作者个人站">🌐 作者个人站 · vinjour.top</a>
 </div>
 <div id="libBar" class="panel"></div>
+<div id="search">
+  <input id="searchInput" placeholder="搜索单词，回车飞向该星…" autocomplete="off" spellcheck="false" />
+  <div id="searchHint"></div>
+</div>
 <div id="hud" class="panel">
   <div class="num"><span id="litCount">0</span> <span style="font-size:14px;color:#8b93c0">/ <span id="libTotal">5500</span></span></div>
   <div class="lbl">已点亮 · <span id="libName">考研英语</span></div>

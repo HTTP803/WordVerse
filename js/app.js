@@ -6,7 +6,7 @@ function loadError(msg) {
 window.addEventListener("error", ev => loadError(ev.message || "脚本运行出错"));
 if (typeof THREE === "undefined") { loadError("3D 引擎未加载（js/vendor/three.min.js 缺失或被拦截）"); throw new Error("THREE missing"); }
 
-const APP_VERSION = "1.9.1";
+const APP_VERSION = "1.9.2";
 const DAILY_GOAL = 20; // 每日任务目标词数（须在初始化 updateHud 前声明，避免 TDZ）
 const R = 640;                                   // 家族分布球壳半径
 const gold = new THREE.Color(0xffd24a);
@@ -26,8 +26,9 @@ let col = null, siz = null, total = 0, coreCount = 0, lit = new Set();
 let picked = -1, intro = 0;
 let sr = {}, quizMode = false;                         // 记忆闭环：复习记录 + 测验态
 let filterStatus = null;                             // 图例掌握度筛选（null=全部）
+let searchList = [];                               // 单词搜索索引（buildLibrary 重建）
 let allCntEl = null;                                 // 图例「全部」计数元素
-let flyTarget = null, flying = false;
+let flyTarget = null, flying = false, flyKeepTarget = false;
 const srKey = id => "wordverse_sr_" + id, DAY = 86400000;
 
 // ---------- 场景 ----------
@@ -193,6 +194,7 @@ function buildLibrary(id) {
   });
 
   updateHud(); updateLibUI(); recolor(); refreshLines();
+  searchList = core.map((s, i) => ({ w: s.word.w.toLowerCase(), i }));
 }
 
 // ---------- 图例（按记忆掌握度筛选，构建一次，含实时计数）----------
@@ -273,6 +275,19 @@ function showCard(s) {
 $("cardClose").onclick = () => { card.style.display = "none"; picked = -1; refreshLines(); controls.autoRotate = true; };
 $("cSpk").onclick = () => speak(core[picked].word.w);
 $("cBtn").onclick = () => toggleLit(picked);
+// ---------- 单词搜索（输入即飞向对应星）----------
+const searchEl = $("search"), searchInput = $("searchInput"), searchHint = $("searchHint");
+function renderSearch(q) {
+  q = q.trim().toLowerCase();
+  if (!q) { searchHint.style.display = "none"; return; }
+  const r = searchList.filter(x => x.w.includes(q)).sort((a, b) => (a.w.startsWith(q) ? 0 : 1) - (b.w.startsWith(q) ? 0 : 1)).slice(0, 8);
+  searchHint.innerHTML = r.map(x => `<div class="si" data-i="${x.i}">${core[x.i].word.w}</div>`).join("");
+  searchHint.style.display = r.length ? "block" : "none";
+}
+searchInput.addEventListener("input", e => renderSearch(e.target.value));
+searchInput.addEventListener("keydown", e => { if (e.key === "Enter") { const f = searchHint.querySelector(".si"); if (f) { const i = +f.dataset.i; selectStar(i); flyToStar(i); searchInput.value = ""; searchHint.style.display = "none"; } } });
+searchHint.addEventListener("click", e => { const d = e.target.closest(".si"); if (d) { const i = +d.dataset.i; selectStar(i); flyToStar(i); searchInput.value = ""; searchHint.style.display = "none"; searchInput.blur(); } });
+document.addEventListener("pointerdown", e => { if (!searchEl.contains(e.target)) searchHint.style.display = "none"; });
 
 // ---------- 发音（女生柔美 + 移动端）----------
 let VOICES = [];
@@ -334,7 +349,8 @@ function toggleStatusFilter(key) {
   recolor(); refreshLines();
   if (!filterStatus) flyTo([0, 0, 900]);
 }
-function flyTo(p) { flyTarget = new THREE.Vector3(p[0], p[1], p[2]); flying = true; controls.autoRotate = false; }
+function flyTo(p, keep) { flyTarget = new THREE.Vector3(p[0], p[1], p[2]); flying = true; controls.autoRotate = false; flyKeepTarget = !!keep; if (!keep) controls.target.set(0, 0, 0); }
+function flyToStar(i) { const s = core[i], p = new THREE.Vector3(s.x, s.y, s.z), d = p.clone().normalize(); controls.target.copy(p); flyTo([p.x + d.x * 200, p.y + d.y * 200, p.z + d.z * 200], true); }
 function toggleLit(i) {
   const s = core[i], w = s.word.w, on = !lit.has(w);
   setStarLit(i, on);
@@ -492,7 +508,7 @@ function loop() {
     camera.lookAt(0, 0, 0);
   } else if (flying) {
     camera.position.lerp(flyTarget, 0.06);
-    if (camera.position.distanceTo(flyTarget) < 25) { flying = false; controls.autoRotate = filterStatus === null; }
+    if (camera.position.distanceTo(flyTarget) < 25) { flying = false; controls.autoRotate = flyKeepTarget ? false : (filterStatus === null); flyKeepTarget = false; }
     controls.update();
   } else controls.update();
   updateMeteors(dt);
