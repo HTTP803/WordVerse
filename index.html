@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>星云词汇 · 考研/四级/六级/高考 3D 星空 v1.8.1</title>
-<!-- 星云词汇 v1.8.1 · 灵感来自「诗云」· 多词库：考研(英一/二通用) / 英语四级 / 英语六级 / 高考 · 记忆闭环 + 主动学习/复习 + 每日任务 + 称号成就激励 + 分享卡 + 使用教学 + 移动端 · 作者友链 vinjour.top · 本地化 three.js 无需 CDN -->
+<title>星云词汇 · 考研/四级/六级/高考 3D 星空 v1.8.2</title>
+<!-- 星云词汇 v1.8.2 · 灵感来自「诗云」· 多词库：考研(英一/二通用) / 英语四级 / 英语六级 / 高考 · 记忆闭环 + 主动学习/复习 + 每日任务 + 称号成就激励 + 分享卡 + 使用教学 + 移动端 · 作者友链 vinjour.top · 本地化 three.js 无需 CDN -->
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { width: 100%; height: 100%; overflow: hidden; background: #05060f; font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; color: #e8ecff; }
@@ -14,8 +14,9 @@
   #title { top: 22px; left: 26px; z-index: 6; }
   #title h1 { font-size: 19px; font-weight: 600; letter-spacing: 1px; }
   #title .sub { font-size: 12px; color: #8b93c0; margin-top: 4px; }
-  #title .home { display: inline-block; margin-top: 7px; font-size: 12px; color: #8b93c0; text-decoration: none; transition: .2s; }
-  #title .home:hover { color: #ffd24a; }
+  #title .home { display: inline-flex; align-items: center; gap: 5px; margin-top: 9px; padding: 5px 12px; font-size: 12px; font-weight: 600; color: #ffd24a; text-decoration: none; border: 1px solid rgba(255,210,74,.5); border-radius: 999px; background: rgba(255,210,74,.12); transition: .2s; animation: friendGlow 2.6s ease-in-out infinite; }
+  #title .home:hover { background: rgba(255,210,74,.26); box-shadow: 0 0 18px rgba(255,210,74,.4); }
+  @keyframes friendGlow { 0%,100% { box-shadow: 0 0 9px rgba(255,210,74,.18); } 50% { box-shadow: 0 0 20px rgba(255,210,74,.42); } }
   #hud { top: 24px; right: 26px; text-align: right; z-index: 6; }
   #hud .num { font-size: 26px; font-weight: 700; color: #ffd24a; }
   #hud .lbl { font-size: 12px; color: #8b93c0; }
@@ -152,7 +153,7 @@
   #tut .nav .prev:disabled { opacity: .4; cursor: default; }
   @media (max-width: 640px){
     #helpBtn{font-size:12px;padding:6px 10px;margin-top:7px}
-    #title{top:12px;left:12px} #title h1{font-size:15px} #title .sub{font-size:10px} #title .home{font-size:10px;margin-top:5px}
+    #title{top:12px;left:12px} #title h1{font-size:15px} #title .sub{font-size:10px} #title .home{font-size:10px;margin-top:5px;padding:4px 9px}
     #hud{top:12px;right:12px} #hud .num{font-size:20px}
     #hud .qbtn{font-size:12px;padding:6px 10px;margin-top:7px}
     #hud .trend{height:34px;gap:3px} #hud .tfill{width:7px} #hud .tl{font-size:8px}
@@ -171,8 +172,8 @@
 <div id="loading"><div class="spin"></div><div class="txt">正在生成词汇星空…</div></div>
 <div id="title" class="panel">
   <h1>星云词汇</h1>
-  <div class="sub">考研(英一/二通用) · 四级 · 六级 · 高考 · 主动学习 + 每日任务 · v1.8.1</div>
-  <a class="home" href="https://vinjour.top/" target="_blank" rel="noopener" title="作者主页 / 友链">🌐 vinjour.top</a>
+  <div class="sub">考研(英一/二通用) · 四级 · 六级 · 高考 · 主动学习 + 每日任务 · v1.8.2</div>
+  <a class="home" href="https://vinjour.top/" target="_blank" rel="noopener" title="作者主页 / 友链">🌐 友链 · vinjour.top</a>
 </div>
 <div id="libBar" class="panel"></div>
 <div id="hud" class="panel">

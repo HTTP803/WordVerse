@@ -6,7 +6,7 @@ function loadError(msg) {
 window.addEventListener("error", ev => loadError(ev.message || "脚本运行出错"));
 if (typeof THREE === "undefined") { loadError("3D 引擎未加载（js/vendor/three.min.js 缺失或被拦截）"); throw new Error("THREE missing"); }
 
-const APP_VERSION = "1.8.1";
+const APP_VERSION = "1.8.2";
 const DAILY_GOAL = 20; // 每日任务目标词数（须在初始化 updateHud 前声明，避免 TDZ）
 const R = 640;                                   // 家族分布球壳半径
 const gold = new THREE.Color(0xffd24a);
@@ -96,7 +96,6 @@ function buildAffixGroups(lib, placed) {
   return groups.slice(0, 60);
 }
 
-// ---------- 构建某词库的星空 ----------
 function buildLibrary(id) {
   cur = id; localStorage.setItem(LIB_KEY, id);
   if (points) { scene.remove(points); geo.dispose(); }
@@ -277,9 +276,7 @@ function pickVoice() {
   if (!VOICES.length) return null;
   const en = VOICES.filter(v => /^en(-|_)?US/i.test(v.lang));
   const pool = en.length ? en : VOICES.filter(v => /^en/i.test(v.lang));
-  const fem = pool.find(v => /female|samantha|victoria|zira|google us english|karen|tessa|monica/i.test(v.name))
-            || pool.find(v => /female/i.test(v.name));
-  return fem || pool[0] || VOICES[0];
+  return pool.find(v => /female|samantha|victoria|zira|google us english|karen|tessa|monica/i.test(v.name)) || pool[0] || VOICES[0];
 }
 function speak(t) {
   if (!window.speechSynthesis) return;
@@ -308,10 +305,10 @@ function recolor() {
   const cnt = { new: 0, learning: 0, mastered: 0 };
   for (let i = 0; i < coreCount; i++) {
     const s = core[i], st = statusOf(s.word.w); cnt[st]++;
-    let c = STATUS_COLOR[st];
-    if (filterStatus && st !== filterStatus) c = c.clone().multiplyScalar(0.12);
+    const dim = filterStatus && st !== filterStatus;
+    const c = dim ? STATUS_COLOR[st].clone().multiplyScalar(0.12) : STATUS_COLOR[st];
     col.set([c.r, c.g, c.b], i * 3);
-    siz.array[i] = starSize(st) * (filterStatus && st !== filterStatus ? 0.35 : 1);
+    siz.array[i] = starSize(st) * (dim ? 0.35 : 1);
   }
   Object.keys(cnt).forEach(k => { const e = document.getElementById("cnt_" + k); if (e) e.textContent = cnt[k]; });
   if (allCntEl) allCntEl.textContent = coreCount;
@@ -650,6 +647,7 @@ function shareShot() {
     renderer.render(scene, camera);
     const cv = document.createElement("canvas"); cv.width = 1080; cv.height = 1080;
     const ctx = cv.getContext("2d");
+    const txt = (t, x, y, font, color, align) => { ctx.font = font; ctx.fillStyle = color; ctx.textAlign = align || "left"; ctx.fillText(t, x, y); };
     ctx.fillStyle = "#05060f"; ctx.fillRect(0, 0, 1080, 1080);
     // 从宽屏 WebGL 画布中心裁一个正方形再铺满，避免拉伸变形（Web 展示错位的根因）
     const gl = renderer.domElement, side = Math.min(gl.width, gl.height);
@@ -657,34 +655,25 @@ function shareShot() {
     ctx.drawImage(gl, sx, sy, side, side, 0, 0, 1080, 1080);
     let g = ctx.createLinearGradient(0, 0, 0, 320); g.addColorStop(0, "rgba(5,6,15,.85)"); g.addColorStop(1, "rgba(5,6,15,0)");
     ctx.fillStyle = g; ctx.fillRect(0, 0, 1080, 320);
-    ctx.textAlign = "left";     ctx.fillStyle = "#e8ecff"; ctx.font = "bold 46px sans-serif";
-    ctx.fillText("星云词汇", 60, 95);
-    ctx.fillStyle = "#8b93c0"; ctx.font = "24px sans-serif";
-    ctx.fillText(LIBRARIES[cur].name + " · ✦ " + RANKS[rankOf(allLit())][0] + " · v" + APP_VERSION, 60, 135);
+    txt("星云词汇", 60, 95, "bold 46px sans-serif", "#e8ecff");
+    txt(LIBRARIES[cur].name + " · ✦ " + RANKS[rankOf(allLit())][0] + " · v" + APP_VERSION, 60, 135, "24px sans-serif", "#8b93c0");
     const pct = total ? Math.round(lit.size / total * 100) : 0;
-    ctx.fillStyle = "#ffd24a"; ctx.font = "bold 82px sans-serif";
-    ctx.fillText(lit.size + " / " + total, 60, 255);
-    ctx.fillStyle = "#8b93c0"; ctx.font = "26px sans-serif";
-    ctx.fillText("已点亮单词 · " + pct + "%", 60, 300);
+    txt(lit.size + " / " + total, 60, 255, "bold 82px sans-serif", "#ffd24a");
+    txt("已点亮单词 · " + pct + "%", 60, 300, "26px sans-serif", "#8b93c0");
     let g2 = ctx.createLinearGradient(0, 740, 0, 1080); g2.addColorStop(0, "rgba(5,6,15,0)"); g2.addColorStop(1, "rgba(5,6,15,.93)");
     ctx.fillStyle = g2; ctx.fillRect(0, 740, 1080, 340);
-    ctx.textAlign = "left"; ctx.fillStyle = "#ffd24a"; ctx.font = "bold 36px sans-serif";
-    ctx.fillText("🔥 连续打卡 " + getStreak() + " 天", 60, 880);
-    ctx.fillStyle = "#9aa2cf"; ctx.font = "22px sans-serif";
-    ctx.fillText("今日待复习 " + dueCount() + " · 已点亮 " + pct + "%", 60, 918);
+    txt("🔥 连续打卡 " + getStreak() + " 天", 60, 880, "bold 36px sans-serif", "#ffd24a");
+    txt("今日待复习 " + dueCount() + " · 已点亮 " + pct + "%", 60, 918, "22px sans-serif", "#9aa2cf");
     const wh = weekHistory(), mx = Math.max(1, ...wh.map(d => d.n)), wd = ["日", "一", "二", "三", "四", "五", "六"];
     const bx = 580, bw = 52, gap = 12, baseY = 928;
-    ctx.fillStyle = "#8b93c0"; ctx.font = "20px sans-serif";
-    ctx.fillText("本周复习趋势", bx, baseY - 132);
+    txt("本周复习趋势", bx, baseY - 132, "20px sans-serif", "#8b93c0");
     wh.forEach((d, i) => {
       const x = bx + i * (bw + gap), h = d.n ? Math.max(6, Math.round(d.n / mx * 118)) : 0;
       const grd = ctx.createLinearGradient(0, baseY - h, 0, baseY); grd.addColorStop(0, "#ffd24a"); grd.addColorStop(1, "#7f77dd");
       ctx.fillStyle = grd; ctx.fillRect(x, baseY - h, bw, h);
-      ctx.fillStyle = "#6f77a6"; ctx.font = "15px sans-serif"; ctx.textAlign = "center";
-      ctx.fillText(wd[d.wd], x + bw / 2, baseY + 20);
+      txt(wd[d.wd], x + bw / 2, baseY + 20, "15px sans-serif", "#6f77a6", "center");
     });
-    ctx.textAlign = "center"; ctx.fillStyle = "#9aa2cf"; ctx.font = "24px sans-serif";
-    ctx.fillText("把单词背成一片星空 ✦ 星云词汇 · vinjour.top", 540, 1012);
+    txt("把单词背成一片星空 ✦ 星云词汇 · vinjour.top", 540, 1012, "24px sans-serif", "#9aa2cf", "center");
     $("shareImg").src = cv.toDataURL("image/png");
     shareEl.style.display = "block";
   } catch (e) { loadError("生成星图失败：" + (e && e.message)); }
