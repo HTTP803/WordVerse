@@ -6,7 +6,7 @@ function loadError(msg) {
 window.addEventListener("error", ev => loadError(ev.message || "脚本运行出错"));
 if (typeof THREE === "undefined") { loadError("3D 引擎未加载（js/vendor/three.min.js 缺失或被拦截）"); throw new Error("THREE missing"); }
 
-const APP_VERSION = "1.9.3";
+const APP_VERSION = "1.9.4";
 const DAILY_GOAL = 20; // 每日任务目标词数（须在初始化 updateHud 前声明，避免 TDZ）
 const R = 640;                                   // 家族分布球壳半径
 const gold = new THREE.Color(0xffd24a);
@@ -313,8 +313,9 @@ if (window.speechSynthesis) {
   document.addEventListener("pointerdown", unlock);
 }
 
-// ---------- 背景纯音乐（Web Audio 生成式氛围 + 可选本地音轨）----------
-let actx = null, musicNodes = null, musicEl = null, musicSrc = "gen";
+// ---------- 背景纯音乐（默认曲 assets/starry.mp3 + 本地音轨覆盖 + 生成式回退）----------
+let actx = null, musicNodes = null, musicEl = null, bgmEl = null, musicSrc = "default";
+const DEFAULT_BGM = "assets/starry.mp3";           // 《星空》作者：酱油瓶（用户提供音频文件）
 let musicOn = localStorage.getItem("wordverse_music") === "1";
 function genMusic() {
   if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
@@ -337,10 +338,12 @@ function stopGen() {
   setTimeout(() => { try { n.oscs.forEach(o => o.stop()); n.lfo.stop(); n.sh.stop(); n.trem.stop(); } catch (e) {} }, 800);
 }
 function playMusic() {
-  if (musicSrc === "file" && musicEl) { if (actx && actx.state === "suspended") actx.resume(); musicEl.play().catch(() => {}); }
-  else genMusic();
+  if (musicSrc === "file" && musicEl) { if (actx && actx.state === "suspended") actx.resume(); musicEl.play().catch(() => {}); return; }
+  if (!bgmEl) { bgmEl = new Audio(DEFAULT_BGM); bgmEl.loop = true; bgmEl.preload = "auto"; }
+  if (actx && actx.state === "suspended") actx.resume();
+  bgmEl.play().catch(() => genMusic());            // 默认曲文件缺失/被拦截 → 回退生成式氛围乐
 }
-function stopMusic() { if (musicEl) musicEl.pause(); stopGen(); }
+function stopMusic() { if (bgmEl) bgmEl.pause(); if (musicEl) musicEl.pause(); stopGen(); }
 function toggleMusic() {
   musicOn = !musicOn;
   localStorage.setItem("wordverse_music", musicOn ? "1" : "0");
