@@ -6,7 +6,7 @@ function loadError(msg) {
 window.addEventListener("error", ev => loadError(ev.message || "脚本运行出错"));
 if (typeof THREE === "undefined") { loadError("3D 引擎未加载（js/vendor/three.min.js 缺失或被拦截）"); throw new Error("THREE missing"); }
 
-const APP_VERSION = "1.9.4";
+const APP_VERSION = "1.9.5";
 const DAILY_GOAL = 20; // 每日任务目标词数（须在初始化 updateHud 前声明，避免 TDZ）
 const R = 640;                                   // 家族分布球壳半径
 const gold = new THREE.Color(0xffd24a);
@@ -316,7 +316,16 @@ if (window.speechSynthesis) {
 // ---------- 背景纯音乐（默认曲 assets/starry.mp3 + 本地音轨覆盖 + 生成式回退）----------
 let actx = null, musicNodes = null, musicEl = null, bgmEl = null, musicSrc = "default";
 const DEFAULT_BGM = "assets/beneath_the_moonlight.mp3";  // 《Beneath the Moonlight》— Aaron Kenny（无版税，自托管）
-let musicOn = localStorage.getItem("wordverse_music") === "1";
+// 默认开启背景乐（新访客）；曾手动关闭(stored "0")的回看用户尊重其选择
+const _m = localStorage.getItem("wordverse_music");
+let musicOn = _m === null ? true : _m === "1";
+let musicStarted = false;
+function startMusicIfNeeded() { if (!musicOn || musicStarted) return; musicStarted = true; playMusic(); }
+function armMusicAutoplay() {                       // 浏览器禁止自动播放，首次交互即起播
+  if (!musicOn) return;
+  const arm = () => { startMusicIfNeeded(); ["pointerdown", "keydown", "touchstart"].forEach(e => document.removeEventListener(e, arm)); };
+  ["pointerdown", "keydown", "touchstart"].forEach(e => document.addEventListener(e, arm));
+}
 function genMusic() {
   if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
   if (actx.state === "suspended") actx.resume();
@@ -839,6 +848,7 @@ $("musicBtn").onclick = toggleMusic;
 $("musicUpBtn").onclick = () => $("musicFile").click();
 $("musicFile").onchange = e => { const f = e.target.files[0]; if (!f) return; if (!musicEl) { musicEl = new Audio(); musicEl.loop = true; } musicEl.src = URL.createObjectURL(f); musicSrc = "file"; stopGen(); musicOn = true; localStorage.setItem("wordverse_music", "1"); playMusic(); updateMusicBtn(); };
 updateMusicBtn();
+armMusicAutoplay();
 $("helpBtn").onclick = openTut;
 $("tutClose").onclick = closeTut;
 $("tutPrev").onclick = () => { if (ti > 0) { ti--; renderTut(); } };
