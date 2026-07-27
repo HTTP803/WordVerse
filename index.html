@@ -18,6 +18,7 @@
   #title .home:hover { background: rgba(255,210,74,.26); box-shadow: 0 0 18px rgba(255,210,74,.4); }
   @keyframes friendGlow { 0%,100% { box-shadow: 0 0 9px rgba(255,210,74,.18); } 50% { box-shadow: 0 0 20px rgba(255,210,74,.42); } }
   #hud { top: 30px; right: 30px; text-align: right; z-index: 6; }
+  #hudToggle { display: none; }
   #hud .num { font-size: 28px; font-weight: 700; color: #ffd24a; }
   #hud .lbl { font-size: 12px; color: #8b93c0; }
   #hud .streak { font-size: 12px; color: #c8cdf0; margin-top: 14px; }
@@ -160,19 +161,22 @@
   #tut .nav .next:hover { background: #948dea; }
   #tut .nav .prev:disabled { opacity: .4; cursor: default; }
   @media (max-width: 640px){
-    #search{top:52px;width:calc(100vw - 24px)}
-    #helpBtn{font-size:12px;padding:6px 10px;margin-top:7px}
-    #title{top:12px;left:12px} #title h1{font-size:15px} #title .sub{font-size:10px} #title .home{font-size:10px;margin-top:5px;padding:4px 9px}
-    #hud{top:12px;right:12px} #hud .num{font-size:20px}
+    #title{display:none}
+    #hudToggle{display:flex;position:fixed;top:8px;right:8px;z-index:7}
+    #hud{display:none;top:52px;right:8px;max-width:84vw;text-align:right;background:rgba(13,15,32,.94);border:1px solid rgba(127,119,221,.28);border-radius:14px;padding:14px 16px;backdrop-filter:blur(14px);box-shadow:0 14px 44px rgba(0,0,0,.5)}
+    #hud.open{display:block}
+    #hud .num{font-size:20px}
     #hud .qbtn{font-size:12px;padding:6px 10px;margin-top:7px}
-    #hud .trend{height:34px;gap:3px} #hud .tfill{width:7px} #hud .tl{font-size:8px}
-    #libBar{top:10px;padding:4px;gap:3px}
-    #libBar .libBtn{font-size:12px;padding:7px 12px;gap:5px;flex:0 0 auto}
-    #libBar .libBtn .dot{width:7px;height:7px}
-    #legend{display:flex;flex-direction:column;gap:4px;bottom:8px;left:8px;min-width:0;padding:6px 8px;font-size:11px} #tip{display:none} #hud .hsep{display:none}
-    #leftTools{top:84px;gap:6px} #leftTools .qbtn,#mediaBar .qbtn{font-size:12px;padding:6px 10px}
-    #mediaBar{bottom:10px;right:10px;gap:6px}
-    #card{width:auto;left:12px;right:12px;top:auto;bottom:62px;transform:none}
+    #hud .trend{height:30px;gap:3px} #hud .tfill{width:6px} #hud .tl{font-size:8px}
+    #libBar{top:8px;left:8px;transform:none;padding:5px;gap:4px}
+    #libBar .libBtn{font-size:11px;padding:6px 9px;gap:5px;flex:0 0 auto}
+    #libBar .libBtn .dot{display:none}
+    #search{top:54px;width:calc(100vw - 24px)}
+    #legend{display:flex;flex-direction:column;gap:4px;bottom:8px;left:8px;min-width:0;padding:6px 8px;font-size:11px}
+    #tip{display:none}
+    #leftTools{top:auto;bottom:120px;left:8px;gap:6px} #leftTools .qbtn,#mediaBar .qbtn{font-size:12px;padding:6px 10px}
+    #mediaBar{bottom:46px;right:10px;gap:6px}
+    #card{width:auto;left:12px;right:12px;top:auto;bottom:84px;transform:none}
     #quiz{width:calc(100vw - 24px);left:50%;transform:translate(-50%,-50%)}
     #share{width:calc(100vw - 24px);left:50%;transform:translate(-50%,-50%)}
   }
@@ -198,6 +202,7 @@
   <input id="searchInput" placeholder="搜索单词，回车飞向该星…" autocomplete="off" spellcheck="false" />
   <div id="searchHint"></div>
 </div>
+<button id="hudToggle" class="qbtn tool" title="统计与进度">📊</button>
 <div id="hud" class="panel">
   <div class="num"><span id="litCount">0</span> <span style="font-size:14px;color:#8b93c0">/ <span id="libTotal">5500</span></span></div>
   <div class="lbl">已点亮 · <span id="libName">考研英语</span></div>

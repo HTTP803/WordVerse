@@ -856,6 +856,7 @@ $("musicFile").onchange = e => { const f = e.target.files[0]; if (!f) return; if
 updateMusicBtn();
 armMusicAutoplay();
 $("helpBtn").onclick = openTut;
+$("hudToggle").onclick = () => $("hud").classList.toggle("open");
 $("tutClose").onclick = closeTut;
 $("tutPrev").onclick = () => { if (ti > 0) { ti--; renderTut(); } };
 $("tutNext").onclick = () => { if (ti < TUT.length - 1) { ti++; renderTut(); } else closeTut(); };
