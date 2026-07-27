@@ -315,7 +315,7 @@ if (window.speechSynthesis) {
 
 // ---------- 背景纯音乐（默认曲 assets/starry.mp3 + 本地音轨覆盖 + 生成式回退）----------
 let actx = null, musicNodes = null, musicEl = null, bgmEl = null, musicSrc = "default";
-const DEFAULT_BGM = "assets/starry.mp3";           // 《星空》作者：酱油瓶（用户提供音频文件）
+const DEFAULT_BGM = "assets/beneath_the_moonlight.mp3";  // 《Beneath the Moonlight》— Aaron Kenny（无版税，自托管）
 let musicOn = localStorage.getItem("wordverse_music") === "1";
 function genMusic() {
   if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();

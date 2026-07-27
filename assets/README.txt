@@ -1,3 +1,4 @@
-把默认背景纯音乐《星空》（作者：酱油瓶）放在此目录，命名为 starry.mp3。
-文件名必须与 js/app.js 中的 DEFAULT_BGM = "assets/starry.mp3" 一致。
-文件就位后，点右上角「🎵 音乐」即播放此曲；缺失时自动回退到生成式氛围乐。
+默认背景纯音乐：
+《Beneath the Moonlight》— Aaron Kenny（无版税，可自托管）
+文件名：beneath_the_moonlight.mp3，须与 js/app.js 中的 DEFAULT_BGM 一致。
+点右上角「🎵 音乐」即播放此曲；文件缺失时自动回退到生成式氛围乐。
