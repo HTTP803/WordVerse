@@ -6,7 +6,7 @@ function loadError(msg) {
 window.addEventListener("error", ev => loadError(ev.message || "脚本运行出错"));
 if (typeof THREE === "undefined") { loadError("3D 引擎未加载（js/vendor/three.min.js 缺失或被拦截）"); throw new Error("THREE missing"); }
 
-const APP_VERSION = "1.9.2";
+const APP_VERSION = "1.9.3";
 const DAILY_GOAL = 20; // 每日任务目标词数（须在初始化 updateHud 前声明，避免 TDZ）
 const R = 640;                                   // 家族分布球壳半径
 const gold = new THREE.Color(0xffd24a);
@@ -311,6 +311,41 @@ function speak(t) {
 if (window.speechSynthesis) {
   const unlock = () => { const u = new SpeechSynthesisUtterance(""); speechSynthesis.speak(u); document.removeEventListener("pointerdown", unlock); };
   document.addEventListener("pointerdown", unlock);
+}
+
+// ---------- 背景纯音乐（Web Audio 生成式氛围 + 可选本地音轨）----------
+let actx = null, musicNodes = null, musicEl = null, musicSrc = "gen";
+let musicOn = localStorage.getItem("wordverse_music") === "1";
+function genMusic() {
+  if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+  if (actx.state === "suspended") actx.resume();
+  const master = actx.createGain(); master.gain.value = 0; master.connect(actx.destination);
+  const lp = actx.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 520; lp.Q.value = 0.6; lp.connect(master);
+  const freqs = [110, 164.81, 220, 277.18, 329.63];
+  const oscs = freqs.map((f, i) => { const o = actx.createOscillator(); o.type = i % 2 ? "sine" : "triangle"; o.frequency.value = f; o.detune.value = (i - 2) * 5; const g = actx.createGain(); g.gain.value = 0.16 / (i + 1.4); o.connect(g); g.connect(lp); o.start(); return o; });
+  const lfo = actx.createOscillator(); lfo.frequency.value = 0.04; const lg = actx.createGain(); lg.gain.value = 220; lfo.connect(lg); lg.connect(lp.frequency); lfo.start();
+  const sh = actx.createOscillator(); sh.type = "sine"; sh.frequency.value = 880; const sg = actx.createGain(); sg.gain.value = 0; sh.connect(sg); sg.connect(master);
+  const trem = actx.createOscillator(); trem.frequency.value = 0.11; const tg = actx.createGain(); tg.gain.value = 0.022; trem.connect(tg); tg.connect(sg.gain); trem.start(); sh.start();
+  master.gain.linearRampToValueAtTime(0.15, actx.currentTime + 2.5);
+  musicNodes = { master, oscs, lfo, sh, trem };
+}
+function stopGen() {
+  if (!musicNodes) return;
+  const m = musicNodes.master, t = actx.currentTime;
+  m.gain.cancelScheduledValues(t); m.gain.setValueAtTime(m.gain.value, t); m.gain.linearRampToValueAtTime(0, t + 0.6);
+  const n = musicNodes; musicNodes = null;
+  setTimeout(() => { try { n.oscs.forEach(o => o.stop()); n.lfo.stop(); n.sh.stop(); n.trem.stop(); } catch (e) {} }, 800);
+}
+function playMusic() {
+  if (musicSrc === "file" && musicEl) { if (actx && actx.state === "suspended") actx.resume(); musicEl.play().catch(() => {}); }
+  else genMusic();
+}
+function stopMusic() { if (musicEl) musicEl.pause(); stopGen(); }
+function toggleMusic() {
+  musicOn = !musicOn;
+  localStorage.setItem("wordverse_music", musicOn ? "1" : "0");
+  musicOn ? playMusic() : stopMusic();
+  updateMusicBtn();
 }
 
 function setStarLit(i, on) {
@@ -796,6 +831,11 @@ $("achClose").onclick = () => $("ach").style.display = "none";
 $("ach").addEventListener("click", e => { if (e.target === $("ach")) $("ach").style.display = "none"; });
 function updateCelBtn(){ const b=$("celBtn"); if(!b) return; const on=!celGroup||celGroup.visible; b.textContent=on?"🌟 天体":"🌑 天体"; b.style.opacity=on?"1":".5"; }
 $("celBtn").onclick = () => { if(!celGroup) return; celGroup.visible=!celGroup.visible; localStorage.setItem("wordverse_cel",celGroup.visible?"1":"0"); updateCelBtn(); };
+function updateMusicBtn() { const b = $("musicBtn"); if (!b) return; b.textContent = musicOn ? "🎵 音乐" : "🔇 音乐"; b.style.opacity = musicOn ? "1" : ".5"; }
+$("musicBtn").onclick = toggleMusic;
+$("musicUpBtn").onclick = () => $("musicFile").click();
+$("musicFile").onchange = e => { const f = e.target.files[0]; if (!f) return; if (!musicEl) { musicEl = new Audio(); musicEl.loop = true; } musicEl.src = URL.createObjectURL(f); musicSrc = "file"; stopGen(); musicOn = true; localStorage.setItem("wordverse_music", "1"); playMusic(); updateMusicBtn(); };
+updateMusicBtn();
 $("helpBtn").onclick = openTut;
 $("tutClose").onclick = closeTut;
 $("tutPrev").onclick = () => { if (ti > 0) { ti--; renderTut(); } };
