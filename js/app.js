@@ -6,7 +6,7 @@ function loadError(msg) {
 window.addEventListener("error", ev => loadError(ev.message || "脚本运行出错"));
 if (typeof THREE === "undefined") { loadError("3D 引擎未加载（js/vendor/three.min.js 缺失或被拦截）"); throw new Error("THREE missing"); }
 
-const APP_VERSION = "1.8.0";
+const APP_VERSION = "1.8.1";
 const DAILY_GOAL = 20; // 每日任务目标词数（须在初始化 updateHud 前声明，避免 TDZ）
 const R = 640;                                   // 家族分布球壳半径
 const gold = new THREE.Color(0xffd24a);
@@ -684,7 +684,7 @@ function shareShot() {
       ctx.fillText(wd[d.wd], x + bw / 2, baseY + 20);
     });
     ctx.textAlign = "center"; ctx.fillStyle = "#9aa2cf"; ctx.font = "24px sans-serif";
-    ctx.fillText("把单词背成一片星空 ✦ 星云词汇", 540, 1012);
+    ctx.fillText("把单词背成一片星空 ✦ 星云词汇 · vinjour.top", 540, 1012);
     $("shareImg").src = cv.toDataURL("image/png");
     shareEl.style.display = "block";
   } catch (e) { loadError("生成星图失败：" + (e && e.message)); }
