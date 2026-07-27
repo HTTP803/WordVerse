@@ -6,7 +6,7 @@ function loadError(msg) {
 window.addEventListener("error", ev => loadError(ev.message || "脚本运行出错"));
 if (typeof THREE === "undefined") { loadError("3D 引擎未加载（js/vendor/three.min.js 缺失或被拦截）"); throw new Error("THREE missing"); }
 
-const APP_VERSION = "1.7.0";
+const APP_VERSION = "1.8.0";
 const DAILY_GOAL = 20; // 每日任务目标词数（须在初始化 updateHud 前声明，避免 TDZ）
 const R = 640;                                   // 家族分布球壳半径
 const gold = new THREE.Color(0xffd24a);
@@ -14,6 +14,7 @@ const gold = new THREE.Color(0xffd24a);
 const STATUS = { new: { name: "未学", color: 0x6f8bd6 }, learning: { name: "学习中", color: 0x19c3c3 }, mastered: { name: "已掌握", color: 0xffd24a } };
 const STATUS_COLOR = { new: new THREE.Color(STATUS.new.color), learning: new THREE.Color(STATUS.learning.color), mastered: gold };
 function statusOf(w) { const r = sr[w]; if (!r || r.s === 0) return "new"; if (r.s === 2) return "mastered"; return "learning"; }   // w=单词字符串（sr 系函数统一用字符串 key）
+function starSize(st) { return st === "mastered" ? 30 : st === "learning" ? 20 : 12; }   // 已学(大)与未学(小)拉开尺寸，一眼区分
 const LIB_KEY = "wordverse_lib";                 // 当前词库
 const litKey = id => "wordverse_lit_" + id;      // 各库进度隔离
 
@@ -25,6 +26,7 @@ let col = null, siz = null, total = 0, coreCount = 0, lit = new Set();
 let picked = -1, intro = 0;
 let sr = {}, quizMode = false;                         // 记忆闭环：复习记录 + 测验态
 let filterStatus = null;                             // 图例掌握度筛选（null=全部）
+let allCntEl = null;                                 // 图例「全部」计数元素
 let flyTarget = null, flying = false;
 const srKey = id => "wordverse_sr_" + id, DAY = 86400000;
 
@@ -155,7 +157,7 @@ function buildLibrary(id) {
     pos.set([s.x, s.y, s.z], i * 3);
     const st = statusOf(s.word.w), c = STATUS_COLOR[st];
     colA.set([c.r, c.g, c.b], i * 3);
-    sizA[i] = st === "mastered" ? 26 : 16;
+    sizA[i] = starSize(st);
   }
   geo = new THREE.BufferGeometry();
   geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
@@ -192,6 +194,12 @@ function buildLibrary(id) {
 
 // ---------- 图例（按记忆掌握度筛选，构建一次，含实时计数）----------
 const legend = document.getElementById("legend");
+const allRow = document.createElement("div");
+allRow.className = "row on"; allRow.dataset.status = "";
+allRow.innerHTML = `<span class="dot" style="background:linear-gradient(135deg,#6f8bd6,#19c3c3,#ffd24a)"></span>全部 <span class="cnt">0</span>`;
+allRow.onclick = () => toggleStatusFilter(null);
+legend.appendChild(allRow);
+allCntEl = allRow.querySelector(".cnt");
 Object.entries(STATUS).forEach(([key, t]) => {
   const c = new THREE.Color(t.color);
   const row = document.createElement("div");
@@ -303,9 +311,10 @@ function recolor() {
     let c = STATUS_COLOR[st];
     if (filterStatus && st !== filterStatus) c = c.clone().multiplyScalar(0.12);
     col.set([c.r, c.g, c.b], i * 3);
-    siz.array[i] = (st === "mastered" ? 26 : 16) * (filterStatus && st !== filterStatus ? 0.4 : 1);
+    siz.array[i] = starSize(st) * (filterStatus && st !== filterStatus ? 0.35 : 1);
   }
   Object.keys(cnt).forEach(k => { const e = document.getElementById("cnt_" + k); if (e) e.textContent = cnt[k]; });
+  if (allCntEl) allCntEl.textContent = coreCount;
   col.needsUpdate = true; siz.needsUpdate = true;
 }
 function refreshLines() {
@@ -316,8 +325,9 @@ function refreshLines() {
   });
 }
 function toggleStatusFilter(key) {
-  filterStatus = filterStatus === key ? null : key;
-  document.querySelectorAll("#legend .row").forEach(r => r.classList.toggle("on", r.dataset.status === filterStatus));
+  filterStatus = (filterStatus === key) ? null : key;
+  const f = filterStatus || "";
+  document.querySelectorAll("#legend .row").forEach(r => r.classList.toggle("on", (r.dataset.status || "") === f));
   recolor(); refreshLines();
   if (!filterStatus) flyTo([0, 0, 900]);
 }
@@ -694,7 +704,7 @@ const TUT = [
     svg: `<svg viewBox="0 0 320 168" xmlns="http://www.w3.org/2000/svg"><polygon points="78,54 84,72 104,72 88,84 94,104 78,92 62,104 68,84 52,72 72,72" fill="rgba(127,119,221,.22)" stroke="rgba(127,119,221,.5)"/><polygon points="196,48 204,72 228,72 206,88 214,114 196,100 178,114 186,88 164,72 188,72" fill="#ffd24a"/><path d="M186 98 l8 8 l16 -18" fill="none" stroke="#05060f" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><text x="160" y="150" fill="#8b93c0" font-size="11" text-anchor="middle">点击「我背会了」→ 转金入复习</text></svg>` },
   { t: "主动学习 / 复习", d: "点右上角 <b>🎯 主动学习</b>：根据释义 / 发音 <b>4 选 1</b>，或切到 <b>拼写</b> 模式手输单词，干扰项多为形近 / 同词缀词；已学过的词点 <b>🔁 复习</b> 再巩固一遍。",
     svg: `<svg viewBox="0 0 320 168" xmlns="http://www.w3.org/2000/svg"><rect x="36" y="20" width="248" height="128" rx="12" fill="rgba(16,18,38,.92)" stroke="rgba(255,210,74,.4)"/><text x="52" y="44" fill="#ffd24a" font-size="11">根据释义选出正确单词</text><text x="52" y="64" fill="#e8ecff" font-size="14">「adj. 重要的」</text><rect x="52" y="76" width="216" height="15" rx="6" fill="rgba(127,119,221,.2)"/><rect x="52" y="98" width="216" height="15" rx="6" fill="rgba(80,200,140,.4)"/><rect x="52" y="120" width="150" height="15" rx="6" fill="rgba(127,119,221,.2)"/></svg>` },
-  { t: "按掌握度筛选", d: "左下角图例按 <b>未学 / 学习中 / 已掌握</b> 分类（颜色随复习实时变化），点击可只显示某一类星。",
+  { t: "按掌握度筛选", d: "默认显示<b>全部</b>星星，未学=蓝(小)、学习中=青、已掌握=金(大)，一眼区分；左下角图例点 <b>未学 / 学习中 / 已掌握</b> 可只显示某一类，点「全部」恢复。",
     svg: `<svg viewBox="0 0 320 168" xmlns="http://www.w3.org/2000/svg"><rect x="36" y="28" width="170" height="22" rx="8" fill="rgba(127,119,221,.1)"/><circle cx="54" cy="39" r="5" fill="#6f8bd6"/><text x="68" y="43" fill="#c8cdf0" font-size="12">未学</text><rect x="36" y="62" width="170" height="22" rx="8" fill="rgba(127,119,221,.1)"/><circle cx="54" cy="73" r="5" fill="#19c3c3"/><text x="68" y="77" fill="#c8cdf0" font-size="12">学习中</text><rect x="36" y="96" width="170" height="22" rx="8" fill="rgba(127,119,221,.1)"/><circle cx="54" cy="107" r="5" fill="#ffd24a"/><text x="68" y="111" fill="#c8cdf0" font-size="12">已掌握</text><text x="232" y="64" fill="#8b93c0" font-size="11">点击</text><text x="232" y="84" fill="#8b93c0" font-size="11">筛选</text></svg>` },
   { t: "打卡与趋势", d: "每完成一次复习即 <b>打卡</b>，右上角显示 🔥 连续天数；下方柱状图是本周每日复习量。",
     svg: `<svg viewBox="0 0 320 168" xmlns="http://www.w3.org/2000/svg"><text x="44" y="70" font-size="32">🔥</text><text x="82" y="66" fill="#ffd24a" font-size="20" font-weight="bold">连续 12 天</text><g fill="#7f77dd"><rect x="60" y="112" width="18" height="22" rx="4"/><rect x="88" y="98" width="18" height="36" rx="4"/><rect x="116" y="106" width="18" height="28" rx="4"/><rect x="144" y="86" width="18" height="48" rx="4"/><rect x="172" y="102" width="18" height="32" rx="4"/></g><text x="60" y="148" fill="#8b93c0" font-size="10">本周复习趋势</text></svg>` },
