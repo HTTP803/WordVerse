@@ -6,7 +6,7 @@ function loadError(msg) {
 window.addEventListener("error", ev => loadError(ev.message || "脚本运行出错"));
 if (typeof THREE === "undefined") { loadError("3D 引擎未加载（js/vendor/three.min.js 缺失或被拦截）"); throw new Error("THREE missing"); }
 
-const APP_VERSION = "1.8.3";
+const APP_VERSION = "1.8.4";
 const DAILY_GOAL = 20; // 每日任务目标词数（须在初始化 updateHud 前声明，避免 TDZ）
 const R = 640;                                   // 家族分布球壳半径
 const gold = new THREE.Color(0xffd24a);
@@ -117,6 +117,10 @@ function buildLibrary(id) {
   // 2) 词缀自动分组（非种子词），最多 60 个最常见词缀簇
   buildAffixGroups(lib, famWords).forEach(g => groups.push({ kind: "affix", type: g.type, label: g.label, meaning: g.meaning, color: affixColor(g), words: g.words }));
 
+  // 已掌握词占比高的家族/词缀簇排到最前（Fibonacci 球面 fi 越小 → +z 前半球越靠近相机）
+  const mRatio = g => g.words.length ? g.words.reduce((n, w) => n + (statusOf(w.w) === "mastered" ? 1 : 0), 0) / g.words.length : -1;
+  groups.sort((a, b) => mRatio(b) - mRatio(a));
+
   const N = groups.length;
   const placed = new Set(famWords);
   families = [];
@@ -141,7 +145,7 @@ function buildLibrary(id) {
   lib.words.forEach(w => {
     if (placed.has(w.w)) return;
     placed.add(w.w);
-    const rr = 200 + Math.random() * 1100, u = Math.random() * 2 - 1, t = Math.random() * Math.PI * 2, f = Math.sqrt(1 - u * u);
+    const rr = 200 + Math.random() * 1100, u = -Math.random(), t = Math.random() * Math.PI * 2, f = Math.sqrt(1 - u * u);
     core.push({ word: w, root: null, theme: null, color: null,
       x: rr * f * Math.cos(t), y: rr * f * Math.sin(t), z: rr * u, fi: -1 });
   });
