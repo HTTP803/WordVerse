@@ -3,51 +3,52 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>星云词汇 · 考研/四级/六级/高考 3D 星空 v1.9.5</title>
-<!-- 星云词汇 v1.9.5 · 灵感来自「诗云」· 多词库：考研(英一/二通用) / 英语四级 / 英语六级 / 高考 · 记忆闭环 + 主动学习/复习 + 每日任务 + 称号成就激励 + 分享卡 + 使用教学 + 移动端 · 作者个人站 vinjour.top · 本地化 three.js 无需 CDN -->
+<title>星云词汇 · 考研/四级/六级/高考 3D 星空 v1.9.6</title>
+<!-- 星云词汇 v1.9.6 · 灵感来自「诗云」· 多词库：考研(英一/二通用) / 英语四级 / 英语六级 / 高考 · 记忆闭环 + 主动学习/复习 + 每日任务 + 称号成就激励 + 分享卡 + 使用教学 + 移动端 · 作者个人站 vinjour.top · 本地化 three.js 无需 CDN -->
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { width: 100%; height: 100%; overflow: hidden; background: #05060f; font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; color: #e8ecff; }
   #app { position: absolute; inset: 0; }
   canvas { display: block; }
   .panel { position: absolute; user-select: none; }
-  #title { top: 22px; left: 26px; z-index: 6; }
+  #title { top: 28px; left: 30px; z-index: 6; }
   #title h1 { font-size: 19px; font-weight: 600; letter-spacing: 1px; }
   #title .sub { font-size: 12px; color: #8b93c0; margin-top: 4px; }
   #title .home { display: inline-flex; align-items: center; gap: 5px; margin-top: 9px; padding: 5px 12px; font-size: 12px; font-weight: 600; color: #ffd24a; text-decoration: none; border: 1px solid rgba(255,210,74,.5); border-radius: 999px; background: rgba(255,210,74,.12); transition: .2s; animation: friendGlow 2.6s ease-in-out infinite; }
   #title .home:hover { background: rgba(255,210,74,.26); box-shadow: 0 0 18px rgba(255,210,74,.4); }
   @keyframes friendGlow { 0%,100% { box-shadow: 0 0 9px rgba(255,210,74,.18); } 50% { box-shadow: 0 0 20px rgba(255,210,74,.42); } }
-  #hud { top: 24px; right: 26px; text-align: right; z-index: 6; }
-  #hud .num { font-size: 26px; font-weight: 700; color: #ffd24a; }
+  #hud { top: 30px; right: 30px; text-align: right; z-index: 6; }
+  #hud .num { font-size: 28px; font-weight: 700; color: #ffd24a; }
   #hud .lbl { font-size: 12px; color: #8b93c0; }
-  #hud .streak { font-size: 12px; color: #c8cdf0; margin-top: 8px; }
+  #hud .streak { font-size: 12px; color: #c8cdf0; margin-top: 14px; }
   #hud .streak span { color: #ffd24a; font-weight: 700; }
-  #hud .trend { display: flex; gap: 6px; justify-content: flex-end; align-items: flex-end; height: 44px; margin-top: 8px; }
+  #hud .trend { display: flex; gap: 6px; justify-content: flex-end; align-items: flex-end; height: 44px; margin-top: 16px; }
   #hud .tbar { display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end; }
   #hud .tfill { width: 10px; border-radius: 3px; background: linear-gradient(180deg,#ffd24a,#7f77dd); transition: height .25s; }
   #hud .tl { font-size: 9px; color: #6f77a6; line-height: 1; }
-  .qbtn { margin-top: 10px; padding: 8px 14px; border: 1px solid rgba(255,210,74,.5); border-radius: 18px; background: rgba(255,210,74,.1); color: #ffd24a; font-size: 13px; font-weight: 600; cursor: pointer; transition: .2s; }
+  .qbtn { margin-top: 18px; padding: 9px 16px; border: 1px solid rgba(255,210,74,.5); border-radius: 18px; background: rgba(255,210,74,.1); color: #ffd24a; font-size: 13px; font-weight: 600; cursor: pointer; transition: .2s; }
   .qbtn:hover { background: rgba(255,210,74,.22); }
   .qbtn.tool { margin-top: 0; border-color: rgba(127,119,221,.35); background: rgba(127,119,221,.12); color: #c8cdf0; font-weight: 500; }
   .qbtn.tool:hover { background: rgba(127,119,221,.28); color: #fff; }
-  #leftTools { position: fixed; top: 112px; left: 12px; display: flex; flex-direction: column; gap: 8px; z-index: 5; }
-  #mediaBar { position: fixed; right: 14px; bottom: 16px; display: flex; align-items: center; gap: 8px; z-index: 5; }
-  #hud .day { font-size: 11px; color: #9aa2cf; margin-top: 8px; }
-  #hud .daybar { height: 5px; border-radius: 3px; background: rgba(127,119,221,.18); margin-top: 5px; overflow: hidden; }
+  #leftTools { position: fixed; top: 122px; left: 16px; display: flex; flex-direction: column; gap: 10px; z-index: 5; }
+  #mediaBar { position: fixed; right: 18px; bottom: 22px; display: flex; align-items: center; gap: 10px; z-index: 5; }
+  #hud .day { font-size: 11px; color: #9aa2cf; margin-top: 16px; }
+  #hud .daybar { height: 5px; border-radius: 3px; background: rgba(127,119,221,.18); margin-top: 8px; overflow: hidden; }
+  #hud .hsep { height: 1px; background: rgba(127,119,221,.25); margin: 16px 0 2px; }
   #hud .dayfill { height: 100%; width: 0; background: linear-gradient(90deg,#7f77dd,#ffd24a); transition: width .3s; }
-  #tip { bottom: 20px; left: 50%; transform: translateX(-50%); font-size: 12px; color: #6f77a6; text-align: center; z-index: 6; }
-  #libBar { top: 18px; left: 50%; transform: translateX(-50%); display: flex; gap: 4px; padding: 5px; background: rgba(13,15,32,.66); border: 1px solid rgba(127,119,221,.18); border-radius: 999px; backdrop-filter: blur(14px); box-shadow: 0 10px 34px rgba(0,0,0,.4); max-width: 94vw; z-index: 6; }
+  #tip { bottom: 26px; left: 50%; transform: translateX(-50%); font-size: 12px; color: #6f77a6; text-align: center; z-index: 6; }
+  #libBar { top: 22px; left: 50%; transform: translateX(-50%); display: flex; gap: 4px; padding: 6px; background: rgba(13,15,32,.66); border: 1px solid rgba(127,119,221,.18); border-radius: 999px; backdrop-filter: blur(14px); box-shadow: 0 10px 34px rgba(0,0,0,.4); max-width: 94vw; z-index: 6; }
   .libBtn { display: flex; align-items: center; gap: 7px; padding: 8px 15px; border: 1px solid transparent; border-radius: 999px; background: transparent; color: #9aa2cf; font-size: 13px; font-weight: 500; cursor: pointer; transition: .22s; white-space: nowrap; }
   .libBtn .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ac); opacity: .5; transition: .22s; flex: 0 0 auto; }
   .libBtn:hover { color: #e8ecff; background: rgba(127,119,221,.10); }
   .libBtn.on { color: #fff; background: rgba(127,119,221,.22); background: color-mix(in srgb, var(--ac) 16%, transparent); border-color: color-mix(in srgb, var(--ac) 55%, transparent); font-weight: 600; box-shadow: 0 0 16px color-mix(in srgb, var(--ac) 35%, transparent); }
   .libBtn.on .dot { opacity: 1; box-shadow: 0 0 9px var(--ac); }
-  #legend { bottom: 20px; left: 26px; display: flex; flex-direction: column; gap: 5px; min-width: 140px; z-index: 6; }
-  #legend .row { display: flex; align-items: center; gap: 7px; font-size: 11px; color: #9aa2cf; cursor: pointer; padding: 2px 6px; border-radius: 8px; transition: .15s; }
+  #legend { bottom: 26px; left: 30px; display: flex; flex-direction: column; gap: 8px; min-width: 150px; padding: 13px 15px; background: rgba(13,15,32,.6); border: 1px solid rgba(127,119,221,.18); border-radius: 14px; backdrop-filter: blur(14px); box-shadow: 0 10px 30px rgba(0,0,0,.35); z-index: 6; }
+  #legend .row { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #9aa2cf; cursor: pointer; padding: 5px 9px; border-radius: 9px; transition: .15s; }
   #legend .row:hover { color: #e8ecff; background: rgba(127,119,221,.12); }
   #legend .row.on { color: #fff; background: rgba(127,119,221,.3); font-weight: 600; }
   #legend .dot { width: 9px; height: 9px; border-radius: 50%; }
-  #legend .cnt { margin-left: auto; padding-left: 12px; color: #c5cbf0; font-variant-numeric: tabular-nums; opacity: .75; }
+  #legend .cnt { margin-left: auto; padding-left: 16px; color: #c5cbf0; font-variant-numeric: tabular-nums; opacity: .75; }
   #card { top: 50%; right: 26px; transform: translateY(-50%); width: 272px; background: linear-gradient(160deg, rgba(22,24,48,.94), rgba(13,15,32,.94)); border: 1px solid rgba(127,119,221,.28); border-radius: 16px; padding: 19px 20px 18px; backdrop-filter: blur(14px); display: none; box-shadow: 0 14px 44px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.05); overflow: hidden; }
   #card::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, #ffd24a, #7f77dd, transparent); }
   #card .fam { font-size: 10.5px; color: #ffd24a; letter-spacing: .6px; text-transform: uppercase; padding-right: 22px; opacity: .9; line-height: 1.4; }
@@ -105,7 +106,7 @@
   #share .btn { margin-top: 12px; width: 100%; padding: 11px; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; background: #7f77dd; color: #fff; }
   #share .btn:hover { background: #948dea; }
   /* 激励体系：称号 / 成就 / 解锁弹幕 */
-  #hud .rank { font-size: 12px; color: #ffd24a; margin-top: 6px; cursor: pointer; }
+  #hud .rank { font-size: 12px; color: #ffd24a; margin-top: 12px; cursor: pointer; }
   #hud .rank .rprog { color: #8b93c0; font-weight: 400; }
   #ach { position: absolute; inset: 0; z-index: 20; display: none; align-items: center; justify-content: center; background: rgba(3,4,12,.72); backdrop-filter: blur(6px); }
   #ach .box { width: 420px; max-width: 92vw; max-height: 86vh; overflow-y: auto; background: rgba(16,18,38,.97); border: 1px solid rgba(255,210,74,.35); border-radius: 18px; padding: 24px; position: relative; box-shadow: 0 20px 60px rgba(0,0,0,.5); }
@@ -165,14 +166,14 @@
     #libBar{top:10px;padding:4px;gap:3px}
     #libBar .libBtn{font-size:12px;padding:7px 12px;gap:5px;flex:0 0 auto}
     #libBar .libBtn .dot{width:7px;height:7px}
-    #legend{display:none} #tip{display:none}
+    #legend{display:none} #tip{display:none} #hud .hsep{display:none}
     #leftTools{top:84px;gap:6px} #leftTools .qbtn,#mediaBar .qbtn{font-size:12px;padding:6px 10px}
     #mediaBar{bottom:10px;right:10px;gap:6px}
     #card{width:auto;left:12px;right:12px;top:auto;bottom:62px;transform:none}
     #quiz{width:calc(100vw - 24px);left:50%;transform:translate(-50%,-50%)}
     #share{width:calc(100vw - 24px);left:50%;transform:translate(-50%,-50%)}
   }
-  #search{position:fixed;top:62px;left:50%;transform:translateX(-50%);width:min(92vw,380px);z-index:6;display:flex;flex-direction:column;gap:4px}
+  #search{position:fixed;top:80px;left:50%;transform:translateX(-50%);width:min(92vw,380px);z-index:6;display:flex;flex-direction:column;gap:4px}
   #search input{width:100%;box-sizing:border-box;padding:8px 14px;font-size:13px;color:#e8ecff;background:rgba(13,15,32,.72);border:1px solid rgba(127,119,221,.3);border-radius:999px;outline:none}
   #search input:focus{border-color:rgba(255,210,74,.6)}
   #searchHint{display:none;background:rgba(16,18,38,.96);border:1px solid rgba(127,119,221,.3);border-radius:12px;overflow:hidden;max-height:240px;overflow-y:auto;margin-top:2px}
@@ -186,7 +187,7 @@
 <div id="loading"><div class="spin"></div><div class="txt">正在生成词汇星空…</div></div>
 <div id="title" class="panel">
   <h1>星云词汇</h1>
-  <div class="sub">考研(英一/二通用) · 四级 · 六级 · 高考 · 主动学习 + 每日任务 · v1.9.5</div>
+  <div class="sub">考研(英一/二通用) · 四级 · 六级 · 高考 · 主动学习 + 每日任务 · v1.9.6</div>
   <a class="home" href="https://vinjour.top/" target="_blank" rel="noopener" title="作者个人站">🌐 作者个人站 · vinjour.top</a>
 </div>
 <div id="libBar" class="panel"></div>
@@ -202,6 +203,7 @@
   <div class="trend" id="trend"></div>
   <div class="day">📅 今日学习 <span id="dayLearned">0</span>/<span id="dayGoal">20</span> 词</div>
   <div class="daybar"><div class="dayfill" id="dayFill"></div></div>
+  <div class="hsep"></div>
   <button class="qbtn" id="quizBtn">🎯 主动学习</button>
   <button class="qbtn" id="reviewBtn">🔁 复习</button>
 </div>
