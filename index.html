@@ -37,6 +37,9 @@
   #hud .hsep { height: 1px; background: rgba(127,119,221,.25); margin: 16px 0 2px; }
   #hud .dayfill { height: 100%; width: 0; background: linear-gradient(90deg,#7f77dd,#ffd24a); transition: width .3s; }
   #tip { bottom: 26px; left: 50%; transform: translateX(-50%); font-size: 12px; color: #6f77a6; text-align: center; z-index: 6; }
+  #credit { position: fixed; bottom: 7px; left: 50%; transform: translateX(-50%); font-size: 10.5px; color: #5b6390; z-index: 4; letter-spacing: .2px; pointer-events: none; white-space: nowrap; max-width: 92vw; overflow: hidden; text-overflow: ellipsis; }
+  #credit a { color: #7f8bc0; text-decoration: none; pointer-events: auto; }
+  #credit a:hover { color: #ffd24a; text-decoration: underline; }
   #libBar { top: 22px; left: 50%; transform: translateX(-50%); display: flex; gap: 4px; padding: 6px; background: rgba(13,15,32,.66); border: 1px solid rgba(127,119,221,.18); border-radius: 999px; backdrop-filter: blur(14px); box-shadow: 0 10px 34px rgba(0,0,0,.4); max-width: 94vw; z-index: 6; }
   .libBtn { display: flex; align-items: center; gap: 7px; padding: 8px 15px; border: 1px solid transparent; border-radius: 999px; background: transparent; color: #9aa2cf; font-size: 13px; font-weight: 500; cursor: pointer; transition: .22s; white-space: nowrap; }
   .libBtn .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ac); opacity: .5; transition: .22s; flex: 0 0 auto; }
@@ -217,6 +220,7 @@
   <button class="qbtn tool" id="musicBtn" title="背景乐：《Beneath the Moonlight》— Aaron Kenny，CC BY 署名授权">🎵 音乐</button>
   <button class="qbtn tool" id="musicUpBtn" title="使用本地音乐文件">⤴</button>
   <input id="musicFile" type="file" accept="audio/*" style="display:none">
+  <div id="credit">♪ 背景乐《Beneath the Moonlight》— <a href="https://happysoulmusic.com/audio/beneath_the_moonlight_-_aaron_kenny-mp3" target="_blank" rel="noopener">Aaron Kenny</a> · CC BY</div>
 </div>
 <div id="legend" class="panel"></div>
 <div id="tip" class="panel">拖动旋转 · 滚轮缩放 · 点星看词 · 左下角图例可切「全部 / 未学 / 学习中 / 已掌握」· 🎯主动学习 / 🔁复习 · 每天学 20 词 · 不会用点 📖教学</div>
