@@ -6,7 +6,7 @@ function loadError(msg) {
 window.addEventListener("error", ev => loadError(ev.message || "脚本运行出错"));
 if (typeof THREE === "undefined") { loadError("3D 引擎未加载（js/vendor/three.min.js 缺失或被拦截）"); throw new Error("THREE missing"); }
 
-const APP_VERSION = "1.6.0";
+const APP_VERSION = "1.7.0";
 const DAILY_GOAL = 20; // 每日任务目标词数（须在初始化 updateHud 前声明，避免 TDZ）
 const R = 640;                                   // 家族分布球壳半径
 const gold = new THREE.Color(0xffd24a);
@@ -358,10 +358,66 @@ function updateHud() {
   const d = getDaily();
   $("dayLearned").textContent = d.learned; $("dayGoal").textContent = d.goal;
   $("dayFill").style.width = Math.min(100, Math.round(d.learned / d.goal * 100)) + "%";
-  renderTrend();
+  renderTrend(); checkAch();
 }
 
 function resetView() { card.style.display = "none"; picked = -1; refreshLines(); controls.autoRotate = true; }
+
+// ---------- 激励体系：称号等级 + 成就徽章 + 解锁弹幕（跨词库累计，须在 buildLibrary 前声明避免 TDZ）----------
+const RANKS = [["星尘", 0], ["微光", 10], ["流星", 50], ["彗星", 150], ["行星", 400], ["恒星", 800], ["超新星", 1500], ["星云", 3000], ["星系", 6000], ["造星者", 10000]];
+function allLit() { return Object.keys(LIBRARIES).reduce((n, id) => n + (JSON.parse(localStorage.getItem(litKey(id)) || "[]")).length, 0); }
+function rankOf(n) { let i = 0; while (i + 1 < RANKS.length && n >= RANKS[i + 1][1]) i++; return i; }
+function getStats() { try { return JSON.parse(localStorage.getItem("wordverse_stats")) || {}; } catch (e) { return {}; } }
+function addStat(k, v) { const s = getStats(); s[k] = (s[k] || 0) + (v || 1); localStorage.setItem("wordverse_stats", JSON.stringify(s)); }
+const ACH = [
+  { id: "first",   ic: "🌟", nm: "初次点亮",  ds: "点亮第 1 颗星",        ck: n => n >= 1 },
+  { id: "ten",     ic: "✨", nm: "小试锋芒",  ds: "累计点亮 10 词",       ck: n => n >= 10 },
+  { id: "fifty",   ic: "💫", nm: "崭露头角",  ds: "累计点亮 50 词",       ck: n => n >= 50 },
+  { id: "hundred", ic: "🌠", nm: "百词斩",    ds: "累计点亮 100 词",      ck: n => n >= 100 },
+  { id: "five00",  ic: "🪐", nm: "词汇行家",  ds: "累计点亮 500 词",      ck: n => n >= 500 },
+  { id: "thousand",ic: "🌌", nm: "千词星海",  ds: "累计点亮 1000 词",     ck: n => n >= 1000 },
+  { id: "day1",    ic: "📅", nm: "今日达标",  ds: "单日完成 20 词任务",   ck: () => getDaily().learned >= DAILY_GOAL },
+  { id: "streak3", ic: "🔥", nm: "三日之约",  ds: "连续打卡 3 天",        ck: () => getStreak() >= 3 },
+  { id: "streak7", ic: "🚀", nm: "七日恒星",  ds: "连续打卡 7 天",        ck: () => getStreak() >= 7 },
+  { id: "streak21",ic: "👑", nm: "21 天习惯", ds: "连续打卡 21 天",       ck: () => getStreak() >= 21 },
+  { id: "perfect", ic: "🎯", nm: "完美一轮",  ds: "一轮测验全部答对",     ck: () => getStats().perfect >= 1 },
+  { id: "speller", ic: "⌨️", nm: "拼写高手",  ds: "拼写题累计答对 20 次", ck: () => (getStats().spellOk || 0) >= 20 },
+  { id: "explorer",ic: "🧭", nm: "四海探星",  ds: "四个词库都有点亮",     ck: () => Object.keys(LIBRARIES).every(id => (JSON.parse(localStorage.getItem(litKey(id)) || "[]")).length > 0) },
+  { id: "master50",ic: "🏅", nm: "记忆大师",  ds: "50 词达到已掌握",      ck: () => core.filter(s => statusOf(s.word.w) === "mastered").length >= 50 }
+];
+function toast(msg) {
+  const t = document.createElement("div"); t.className = "t"; t.textContent = msg;
+  const box = document.getElementById("toast"); box.appendChild(t);
+  setTimeout(() => t.remove(), 4000);
+}
+function checkAch() {
+  const n = allLit();
+  let got = []; try { got = JSON.parse(localStorage.getItem("wordverse_ach")) || []; } catch (e) {}
+  ACH.forEach(a => { if (!got.includes(a.id) && a.ck(n)) { got.push(a.id); toast("🏆 成就解锁 · " + a.ic + " " + a.nm); } });
+  localStorage.setItem("wordverse_ach", JSON.stringify(got));
+  const ri = rankOf(n), last = +(localStorage.getItem("wordverse_rank") || 0);
+  if (ri > last) toast("🎉 晋升称号 · ✦ " + RANKS[ri][0]);
+  localStorage.setItem("wordverse_rank", ri);
+  const next = RANKS[ri + 1];
+  document.getElementById("rankName").textContent = RANKS[ri][0];
+  document.getElementById("rankProg").textContent = next ? "· 距「" + next[0] + "」还差 " + (next[1] - n) + " 词" : "· 已至巅峰";
+  return { n, ri, got };
+}
+function openAch() {
+  const { n, ri, got } = checkAch();
+  const next = RANKS[ri + 1], base = RANKS[ri][1];
+  document.getElementById("achRank").textContent = "✦ 当前称号：" + RANKS[ri][0] + "（累计点亮 " + n + " 词）";
+  document.getElementById("achRankFill").style.width = next ? Math.round((n - base) / (next[1] - base) * 100) + "%" : "100%";
+  document.getElementById("achRankNext").textContent = next ? "再点亮 " + (next[1] - n) + " 词晋升「" + next[0] + "」" : "已达最高称号「造星者」";
+  const grid = document.getElementById("achGrid"); grid.innerHTML = "";
+  ACH.forEach(a => {
+    const on = got.includes(a.id);
+    const d = document.createElement("div"); d.className = "a" + (on ? " on" : "");
+    d.innerHTML = `<span class="ic">${a.ic}</span><div><div class="nm">${a.nm}</div><div class="ds">${a.ds}</div></div>`;
+    grid.appendChild(d);
+  });
+  document.getElementById("ach").style.display = "flex";
+}
 
 // ---------- 进场动画 + 渲染循环 ----------
 buildLibrary(cur);
@@ -452,7 +508,9 @@ function startQuiz(type) {
 function nextQuiz() {
   if (qi >= quiz.length) {
     qBody.style.display = "none"; qDone.style.display = "block";
-    $("qStat").textContent = `本轮 ${quiz.length} 词 · 记住 ${qOkN} · 待巩固 ${qNoN}`; return;
+    $("qStat").textContent = `本轮 ${quiz.length} 词 · 记住 ${qOkN} · 待巩固 ${qNoN}`;
+    if (qNoN === 0 && quiz.length >= 5) { addStat("perfect"); checkAch(); }
+    return;
   }
   const s = quiz[qi], w = s.word;
   $("qFam").textContent = s.root ? (s.root.kind === "affix" ? (s.root.type === "pre" ? "前缀 " : "后缀 ") : "词根 ") + s.root.root + " · " + s.root.meaning : "散词";
@@ -490,6 +548,7 @@ function submitSpell() {
   const w = quiz[qi].word, ans = $("qSpell").dataset.ans;
   const v = $("qInput").value.trim().toLowerCase();
   const correct = v === ans.toLowerCase();
+  if (correct) addStat("spellOk");
   $("qInput").disabled = true; $("qSubmit").style.display = "none";
   feedback(correct, w);
 }
@@ -591,7 +650,7 @@ function shareShot() {
     ctx.textAlign = "left";     ctx.fillStyle = "#e8ecff"; ctx.font = "bold 46px sans-serif";
     ctx.fillText("星云词汇", 60, 95);
     ctx.fillStyle = "#8b93c0"; ctx.font = "24px sans-serif";
-    ctx.fillText(LIBRARIES[cur].name + " · v" + APP_VERSION, 60, 135);
+    ctx.fillText(LIBRARIES[cur].name + " · ✦ " + RANKS[rankOf(allLit())][0] + " · v" + APP_VERSION, 60, 135);
     const pct = total ? Math.round(lit.size / total * 100) : 0;
     ctx.fillStyle = "#ffd24a"; ctx.font = "bold 82px sans-serif";
     ctx.fillText(lit.size + " / " + total, 60, 255);
@@ -661,6 +720,9 @@ function openTut() {
   renderTut(); tutEl.style.display = "flex";
 }
 function closeTut() { tutEl.style.display = "none"; const v = $("tutVideo"); if (v) v.pause(); }
+$("achBtn").onclick = openAch; $("rankLine").onclick = openAch;
+$("achClose").onclick = () => $("ach").style.display = "none";
+$("ach").addEventListener("click", e => { if (e.target === $("ach")) $("ach").style.display = "none"; });
 $("helpBtn").onclick = openTut;
 $("tutClose").onclick = closeTut;
 $("tutPrev").onclick = () => { if (ti > 0) { ti--; renderTut(); } };

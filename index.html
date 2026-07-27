@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>星云词汇 · 考研/四级/六级/高考 3D 星空 v1.6.0</title>
-<!-- 星云词汇 v1.6.0 · 灵感来自「诗云」· 多词库：考研(英一/二通用) / 英语四级 / 英语六级 / 高考 · 记忆闭环 + 主动学习/复习 + 每日任务 + 分享卡 + 使用教学 + 移动端 · 本地化 three.js 无需 CDN -->
+<title>星云词汇 · 考研/四级/六级/高考 3D 星空 v1.7.0</title>
+<!-- 星云词汇 v1.7.0 · 灵感来自「诗云」· 多词库：考研(英一/二通用) / 英语四级 / 英语六级 / 高考 · 记忆闭环 + 主动学习/复习 + 每日任务 + 称号成就激励 + 分享卡 + 使用教学 + 移动端 · 本地化 three.js 无需 CDN -->
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { width: 100%; height: 100%; overflow: hidden; background: #05060f; font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; color: #e8ecff; }
@@ -97,6 +97,30 @@
   #share .close { position: absolute; top: 10px; right: 14px; cursor: pointer; color: #6f77a6; font-size: 18px; z-index: 2; }
   #share .btn { margin-top: 12px; width: 100%; padding: 11px; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; background: #7f77dd; color: #fff; }
   #share .btn:hover { background: #948dea; }
+  /* 激励体系：称号 / 成就 / 解锁弹幕 */
+  #hud .rank { font-size: 12px; color: #ffd24a; margin-top: 6px; cursor: pointer; }
+  #hud .rank .rprog { color: #8b93c0; font-weight: 400; }
+  #ach { position: absolute; inset: 0; z-index: 20; display: none; align-items: center; justify-content: center; background: rgba(3,4,12,.72); backdrop-filter: blur(6px); }
+  #ach .box { width: 420px; max-width: 92vw; max-height: 86vh; overflow-y: auto; background: rgba(16,18,38,.97); border: 1px solid rgba(255,210,74,.35); border-radius: 18px; padding: 24px; position: relative; box-shadow: 0 20px 60px rgba(0,0,0,.5); }
+  #ach .close { position: absolute; top: 12px; right: 16px; cursor: pointer; color: #6f77a6; font-size: 22px; }
+  #ach .close:hover { color: #fff; }
+  #ach h2 { font-size: 18px; margin-bottom: 4px; }
+  #ach .rankNow { font-size: 14px; color: #ffd24a; font-weight: 700; margin: 10px 0 4px; }
+  #ach .rankBar { height: 6px; border-radius: 3px; background: rgba(127,119,221,.18); overflow: hidden; margin-bottom: 4px; }
+  #ach .rankFill { height: 100%; background: linear-gradient(90deg,#7f77dd,#ffd24a); transition: width .3s; }
+  #ach .rankNext { font-size: 11px; color: #8b93c0; margin-bottom: 14px; }
+  #ach .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  #ach .a { display: flex; align-items: center; gap: 9px; padding: 9px 11px; border-radius: 11px; background: rgba(127,119,221,.08); border: 1px solid rgba(127,119,221,.16); }
+  #ach .a.on { background: rgba(255,210,74,.1); border-color: rgba(255,210,74,.4); }
+  #ach .a .ic { font-size: 20px; filter: grayscale(1); opacity: .35; }
+  #ach .a.on .ic { filter: none; opacity: 1; }
+  #ach .a .nm { font-size: 12px; font-weight: 600; color: #9aa2cf; }
+  #ach .a.on .nm { color: #ffd24a; }
+  #ach .a .ds { font-size: 10px; color: #6f77a6; margin-top: 2px; line-height: 1.4; }
+  #toast { position: absolute; top: 84px; left: 50%; transform: translateX(-50%); z-index: 30; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+  #toast .t { padding: 11px 22px; border-radius: 999px; background: rgba(16,18,38,.95); border: 1px solid rgba(255,210,74,.55); color: #ffd24a; font-size: 14px; font-weight: 600; box-shadow: 0 10px 34px rgba(0,0,0,.5), 0 0 24px rgba(255,210,74,.15); animation: tin .4s ease, tout .5s ease 3.4s forwards; white-space: nowrap; }
+  @keyframes tin { from { opacity: 0; transform: translateY(-18px) scale(.9); } }
+  @keyframes tout { to { opacity: 0; transform: translateY(-12px); } }
   #loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 14px; background: #05060f; z-index: 10; transition: opacity .8s; }
   #loading .spin { width: 40px; height: 40px; border: 3px solid rgba(127,119,221,.25); border-top-color: #7f77dd; border-radius: 50%; animation: r 1s linear infinite; }
   #loading .txt { font-size: 13px; color: #8b93c0; }
@@ -145,12 +169,13 @@
 <div id="loading"><div class="spin"></div><div class="txt">正在生成词汇星空…</div></div>
 <div id="title" class="panel">
   <h1>星云词汇</h1>
-  <div class="sub">考研(英一/二通用) · 四级 · 六级 · 高考 · 主动学习 + 每日任务 · v1.6.0</div>
+  <div class="sub">考研(英一/二通用) · 四级 · 六级 · 高考 · 主动学习 + 每日任务 · v1.7.0</div>
 </div>
 <div id="libBar" class="panel"></div>
 <div id="hud" class="panel">
   <div class="num"><span id="litCount">0</span> <span style="font-size:14px;color:#8b93c0">/ <span id="libTotal">5500</span></span></div>
   <div class="lbl">已点亮 · <span id="libName">考研英语</span></div>
+  <div class="rank" id="rankLine" title="点击查看成就">✦ <span id="rankName">星尘</span> <span class="rprog" id="rankProg"></span></div>
   <div class="streak">🔥 连续打卡 <span id="streak">0</span> 天 · 待复习 <span id="dueCount">0</span></div>
   <div class="trend" id="trend"></div>
   <div class="day">📅 今日学习 <span id="dayLearned">0</span>/<span id="dayGoal">20</span> 词</div>
@@ -158,6 +183,7 @@
   <button class="qbtn" id="quizBtn">🎯 主动学习</button>
   <button class="qbtn" id="reviewBtn">🔁 复习</button>
   <button class="qbtn" id="shareBtn">📷 我的星图</button>
+  <button class="qbtn" id="achBtn">🏆 成就</button>
   <button class="qbtn" id="helpBtn">📖 教学</button>
 </div>
 <div id="legend" class="panel"></div>
@@ -198,6 +224,17 @@
   <span class="close" id="shareClose">×</span>
   <img id="shareImg" alt="我的星图">
   <button class="btn" id="shareDl">⬇ 下载星图</button>
+</div>
+<div id="toast"></div>
+<div id="ach" class="panel">
+  <div class="box">
+    <span class="close" id="achClose">×</span>
+    <h2>🏆 我的成就</h2>
+    <div class="rankNow" id="achRank"></div>
+    <div class="rankBar"><div class="rankFill" id="achRankFill"></div></div>
+    <div class="rankNext" id="achRankNext"></div>
+    <div class="grid" id="achGrid"></div>
+  </div>
 </div>
 <div id="tut" class="panel">
   <div class="box">
