@@ -30,6 +30,9 @@ let searchList = [];                               // 单词搜索索引（build
 let allCntEl = null;                                 // 图例「全部」计数元素
 let flyTarget = null, flying = false, flyKeepTarget = false;
 const srKey = id => "wordverse_sr_" + id, DAY = 86400000;
+function ymd(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
+function todayStr(){return ymd(new Date());}
+function yesterdayStr(){return ymd(new Date(Date.now()-DAY));}
 
 // ---------- 场景 ----------
 const scene = new THREE.Scene();
@@ -242,8 +245,10 @@ renderer.domElement.addEventListener("pointerup", e => {
   if (!downXY || Math.hypot(e.clientX - downXY[0], e.clientY - downXY[1]) > 6) return;
   mouse.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
   ray.setFromCamera(mouse, camera);
-  const ch = celGroup ? ray.intersectObjects(celHits) : [];
-  if (ch.length) { poemToast(ch[0].object.userData.kind); return; }
+  if (celGroup && celGroup.visible) {
+    const ch = ray.intersectObjects(celHits);
+    if (ch.length) { poemToast(ch[0].object.userData.kind); return; }
+  }
   const hits = ray.intersectObject(points).filter(h => h.index < coreCount);
   if (hits.length) selectStar(hits[0].index);
 });
@@ -602,7 +607,8 @@ function makeDistractors(ans) {
   pool.sort((x, y) => y.score - x.score);
   const top = pool.slice(0, 40), pick = [];
   while (pick.length < 3 && top.length) { const k = (Math.random() * top.length) | 0; pick.push(top[k].w); top.splice(k, 1); }
-  while (pick.length < 3) {
+  let _g = 0;
+  while (pick.length < 3 && _g++ < 500) {
     const c = core[(Math.random() * core.length) | 0].word.w;
     if (c !== ans && !pick.includes(c)) pick.push(c);
   }
@@ -696,11 +702,11 @@ function exitQuiz() { quizMode = false; quizEl.style.display = "none"; controls.
 
 // 连续打卡（全局，不分子库）
 function touchStreak() {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayStr();
   let s = null; try { s = JSON.parse(localStorage.getItem("wordverse_streak")); } catch (e) {}
   if (!s) s = { last: today, n: 1 };
   else if (s.last !== today) {
-    const y = new Date(Date.now() - 864e5).toISOString().slice(0, 10);
+    const y = yesterdayStr();
     s.n = s.last === y ? s.n + 1 : 1; s.last = today;
   }
   localStorage.setItem("wordverse_streak", JSON.stringify(s));
@@ -710,26 +716,26 @@ function getStreak() {
   try {
     const s = JSON.parse(localStorage.getItem("wordverse_streak"));
     if (!s) return 0;
-    const today = new Date().toISOString().slice(0, 10), y = new Date(Date.now() - 864e5).toISOString().slice(0, 10);
+    const today = todayStr(), y = yesterdayStr();
     return (s.last === today || s.last === y) ? s.n : 0;
   } catch (e) { return 0; }
 }
 // ---------- 每日任务（如每天背 20 词）----------
 function getDaily() {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayStr();
   let d = null; try { d = JSON.parse(localStorage.getItem("wordverse_daily")); } catch (e) {}
   if (!d || d.date !== today) return { date: today, learned: 0, goal: DAILY_GOAL };
   return { date: today, learned: d.learned, goal: DAILY_GOAL };
 }
 function touchDaily() {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayStr();
   let d = null; try { d = JSON.parse(localStorage.getItem("wordverse_daily")); } catch (e) {}
   if (!d || d.date !== today) d = { date: today, learned: 0 };
   d.learned++; d.date = today;
   localStorage.setItem("wordverse_daily", JSON.stringify(d));
 }
 function touchHistory() {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayStr();
   let h = {}; try { h = JSON.parse(localStorage.getItem("wordverse_history")) || {}; } catch (e) {}
   h[today] = (h[today] || 0) + 1;
   localStorage.setItem("wordverse_history", JSON.stringify(h));
@@ -738,7 +744,7 @@ function weekHistory() {
   const now = new Date(), dow = now.getDay();
   const off = dow === 0 ? 6 : dow - 1; // 距本周一的天数
   const days = [];
-  for (let i = 6; i >= 0; i--) { const d = new Date(now); d.setDate(now.getDate() - off - i); const key = d.toISOString().slice(0, 10); days.push({ key, wd: d.getDay(), n: 0 }); }
+  for (let i = 6; i >= 0; i--) { const d = new Date(now); d.setDate(now.getDate() - off - i); const key = ymd(d); days.push({ key, wd: d.getDay(), n: 0 }); }
   let h = {}; try { h = JSON.parse(localStorage.getItem("wordverse_history")) || {}; } catch (e) {}
   days.forEach(d => d.n = h[d.key] || 0);
   return days;
