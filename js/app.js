@@ -6,7 +6,7 @@ function loadError(msg) {
 window.addEventListener("error", ev => loadError(ev.message || "脚本运行出错"));
 if (typeof THREE === "undefined") { loadError("3D 引擎未加载（js/vendor/three.min.js 缺失或被拦截）"); throw new Error("THREE missing"); }
 
-const APP_VERSION = "1.9.0";
+const APP_VERSION = "1.9.1";
 const DAILY_GOAL = 20; // 每日任务目标词数（须在初始化 updateHud 前声明，避免 TDZ）
 const R = 640;                                   // 家族分布球壳半径
 const gold = new THREE.Color(0xffd24a);
@@ -240,6 +240,8 @@ renderer.domElement.addEventListener("pointerup", e => {
   if (!downXY || Math.hypot(e.clientX - downXY[0], e.clientY - downXY[1]) > 6) return;
   mouse.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
   ray.setFromCamera(mouse, camera);
+  const ch = celGroup ? ray.intersectObjects(celHits) : [];
+  if (ch.length) { poemToast(ch[0].object.userData.kind); return; }
   const hits = ray.intersectObject(points).filter(h => h.index < coreCount);
   if (hits.length) selectStar(hits[0].index);
 });
@@ -431,28 +433,58 @@ function openAch() {
 }
 
 // ---------- 背景天体（太阳/月亮/远景恒星，可开关，不干扰单词星）----------
-let celGroup = null;
+let celGroup=null, sunSprite=null, moonSprite=null, celHits=[];
+let fxGroup=null, meteors=[], nextMeteor=0;
+const POEMS={ sun:["☀ 太阳不语，却把每个单词都照亮成星。","白昼里，也有属于你的光。","背下的词，是落在心里的日头。"], moon:["🌙 月亮记得你今晚背的每一个词。","夜深了，星河替你保管进度。","安静的夜里，知识悄悄生长。"] };
+function poemToast(kind){ const a=POEMS[kind]||POEMS.sun; toast(a[(Math.random()*a.length)|0]); }
 function glowTex(stops){ const c=document.createElement("canvas"); c.width=c.height=128; const x=c.getContext("2d"), g=x.createRadialGradient(64,64,0,64,64,64); stops.forEach(s=>g.addColorStop(s[0],s[1])); x.fillStyle=g; x.fillRect(0,0,128,128); return new THREE.CanvasTexture(c); }
-function celSprite(tex,size,pos){ const m=new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:false,depthWrite:false,blending:THREE.AdditiveBlending}); const s=new THREE.Sprite(m); s.scale.set(size,size,1); s.position.set(pos[0],pos[1],pos[2]); s.renderOrder=-10; return s; }
+function celSprite(tex,size,pos,kind){ const m=new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:false,depthWrite:false,blending:THREE.AdditiveBlending}); const s=new THREE.Sprite(m); s.scale.set(size,size,1); s.position.set(pos[0],pos[1],pos[2]); s.renderOrder=-10; s.userData.kind=kind; return s; }
 function createCelestial(){
   if(celGroup){ scene.remove(celGroup); celGroup.traverse(o=>o.material&&o.material.dispose()); }
   celGroup=new THREE.Group();
-  celGroup.add(celSprite(glowTex([[0,"rgba(255,228,150,.95)"],[.25,"rgba(255,180,80,.55)"],[.6,"rgba(255,140,60,.12)"],[1,"rgba(255,120,40,0)"]]),760,[200,160,-2500]));
-  celGroup.add(celSprite(glowTex([[0,"rgba(225,235,255,.9)"],[.3,"rgba(180,200,240,.4)"],[.65,"rgba(150,175,225,.1)"],[1,"rgba(120,150,210,0)"]]),440,[-1700,360,-2100]));
+  sunSprite=celSprite(glowTex([[0,"rgba(255,228,150,.95)"],[.25,"rgba(255,180,80,.55)"],[.6,"rgba(255,140,60,.12)"],[1,"rgba(255,120,40,0)"]]),760,[200,160,-2500],"sun");
+  moonSprite=celSprite(glowTex([[0,"rgba(225,235,255,.9)"],[.3,"rgba(180,200,240,.4)"],[.65,"rgba(150,175,225,.1)"],[1,"rgba(120,150,210,0)"]]),440,[-1700,360,-2100],"moon");
+  celGroup.add(sunSprite,moonSprite);
   const N=26,p=new Float32Array(N*3);
   for(let i=0;i<N;i++){ const rr=2200+Math.random()*900,u=Math.random()*2-1,t=Math.random()*Math.PI*2,f=Math.sqrt(1-u*u); p[i*3]=rr*f*Math.cos(t); p[i*3+1]=rr*f*Math.sin(t); p[i*3+2]=rr*u; }
   const g=new THREE.BufferGeometry(); g.setAttribute("position",new THREE.BufferAttribute(p,3));
   const m=new THREE.PointsMaterial({color:0xbfc8ff,size:26,sizeAttenuation:true,transparent:true,opacity:.8,depthTest:false,depthWrite:false,blending:THREE.AdditiveBlending});
   const stars=new THREE.Points(g,m); stars.renderOrder=-11; celGroup.add(stars);
   scene.add(celGroup);
-  celGroup.visible = localStorage.getItem("wordverse_cel")!=="0";
+  const hr=new Date().getHours(), day=hr>=6&&hr<18;          // 随真实时间：白天太阳亮、夜晚月亮亮
+  sunSprite.material.opacity=day?1:0.4; moonSprite.material.opacity=day?0.4:1;
+  celHits=[sunSprite,moonSprite];
+  celGroup.visible=localStorage.getItem("wordverse_cel")!=="0";
   updateCelBtn();
+}
+function spawnMeteor(){
+  if(!fxGroup){ fxGroup=new THREE.Group(); fxGroup.renderOrder=-9; scene.add(fxGroup); nextMeteor=performance.now()+2500; }
+  const a=new THREE.Vector3((Math.random()*2-1)*1800,900+Math.random()*600,-1800-Math.random()*600);
+  const d=new THREE.Vector3((Math.random()*2-1)*0.6,-1,(Math.random()*2-1)*0.2).normalize();
+  const L=180+Math.random()*160, sp=900+Math.random()*500, life=1.1+Math.random()*0.6;
+  const g=new THREE.BufferGeometry(); g.setAttribute("position",new THREE.BufferAttribute(new Float32Array(6),3));
+  const m=new THREE.LineBasicMaterial({color:0xcfe0ff,transparent:true,opacity:0,depthTest:false,depthWrite:false,blending:THREE.AdditiveBlending});
+  const line=new THREE.Line(g,m); line.renderOrder=-9; fxGroup.add(line); meteors.push({a,d,L,sp,age:0,life,line});
+}
+function updateMeteors(dt){
+  if(!celGroup||!celGroup.visible) return;
+  if(!fxGroup) spawnMeteor();
+  if(performance.now()>nextMeteor){ spawnMeteor(); nextMeteor=performance.now()+7000+Math.random()*9000; }
+  for(let i=meteors.length-1;i>=0;i--){ const mt=meteors[i]; mt.age+=dt; const k=mt.age/mt.life;
+    if(k>=1){ fxGroup.remove(mt.line); mt.line.geometry.dispose(); mt.line.material.dispose(); meteors.splice(i,1); continue; }
+    mt.a.addScaledVector(mt.d,mt.sp*dt);
+    const p=mt.line.geometry.attributes.position, tail=mt.a.clone().addScaledVector(mt.d,-mt.L);
+    p.setXYZ(0,mt.a.x,mt.a.y,mt.a.z); p.setXYZ(1,tail.x,tail.y,tail.z); p.needsUpdate=true;
+    mt.line.material.opacity=Math.sin(k*Math.PI)*0.9;
+  }
 }
 // ---------- 进场动画 + 渲染循环 ----------
 createCelestial();
 buildLibrary(cur);
+let lastT = performance.now();
 function loop() {
   requestAnimationFrame(loop);
+  const now = performance.now(), dt = Math.min(0.05, (now - lastT) / 1000); lastT = now;
   if (intro < 1) {
     intro = Math.min(1, intro + 0.012);
     const e = 1 - Math.pow(1 - intro, 3);
@@ -463,6 +495,7 @@ function loop() {
     if (camera.position.distanceTo(flyTarget) < 25) { flying = false; controls.autoRotate = filterStatus === null; }
     controls.update();
   } else controls.update();
+  updateMeteors(dt);
   renderer.render(scene, camera);
 }
 loop();
