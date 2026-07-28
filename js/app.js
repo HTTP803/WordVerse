@@ -521,29 +521,35 @@ function openStats() {
     `</div>`;
   $("stats").style.display = "flex";
 }
-function exportProgress() {
+function backupProgress() {
   const data = { __meta: { app: "星云词汇", version: APP_VERSION, exported: new Date().toISOString() } };
   for (let i = localStorage.length - 1; i >= 0; i--) { const k = localStorage.key(i); if (k && k.startsWith("wordverse_")) { try { data[k] = JSON.parse(localStorage.getItem(k)); } catch (e) { data[k] = localStorage.getItem(k); } } }
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }), a = document.createElement("a");
   a.href = URL.createObjectURL(blob); a.download = "星云词汇进度_" + todayStr() + ".json"; a.click(); URL.revokeObjectURL(a.href);
-  toast("⬇ 进度已导出");
+  toast("✅ 进度已保存到文件");
 }
-function importProgress(file) {
+function restoreProgress(file) {
   const r = new FileReader();
   r.onload = () => { try {
     const data = JSON.parse(r.result);
     Object.keys(data).forEach(k => { if (k.startsWith("wordverse_") && k !== "__meta") localStorage.setItem(k, typeof data[k] === "string" ? data[k] : JSON.stringify(data[k])); });
-    toast("⬆ 进度已导入，正在刷新…");
+    toast("✅ 进度已恢复，正在刷新…");
     setTimeout(() => { buildLibrary(cur); filterStatus = null; document.querySelectorAll("#legend .row").forEach(rw => rw.classList.toggle("on", (rw.dataset.status || "") === "")); recolor(); refreshLines(); flyTo([0, 0, 900]); }, 300);
-  } catch (e) { toast("导入失败：文件格式错误"); } };
+  } catch (e) { toast("恢复失败：文件格式错误"); } };
   r.readAsText(file);
 }
 $("statsBtn").onclick = openStats;
 $("statsClose").onclick = () => $("stats").style.display = "none";
 $("stats").addEventListener("click", e => { if (e.target.id === "stats") $("stats").style.display = "none"; });
-$("exportBtn").onclick = exportProgress;
-$("importBtn").onclick = () => $("impFile").click();
-$("impFile").addEventListener("change", e => { if (e.target.files[0]) importProgress(e.target.files[0]); e.target.value = ""; });
+$("backupBtn").onclick = () => $("bkDlg").style.display = "flex";
+$("restoreBtn").onclick = () => $("rsDlg").style.display = "flex";
+$("bkOk").onclick = () => { $("bkDlg").style.display = "none"; backupProgress(); };
+$("bkCancel").onclick = () => $("bkDlg").style.display = "none";
+$("rsOk").onclick = () => { $("rsDlg").style.display = "none"; $("impFile").click(); };
+$("rsCancel").onclick = () => $("rsDlg").style.display = "none";
+$("bkDlg").addEventListener("click", e => { if (e.target.id === "bkDlg") $("bkDlg").style.display = "none"; });
+$("rsDlg").addEventListener("click", e => { if (e.target.id === "rsDlg") $("rsDlg").style.display = "none"; });
+$("impFile").addEventListener("change", e => { if (e.target.files[0]) restoreProgress(e.target.files[0]); e.target.value = ""; });
 
 // ---------- 背景天体（太阳/月亮/远景恒星，可开关，不干扰单词星）----------
 let celGroup=null, sunSprite=null, moonSprite=null, celHits=[];

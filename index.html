@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>星云词汇 · 考研/四级/六级/高考 3D 星空 v2.0.0</title>
-<!-- 星云词汇 v2.0.0 · 灵感来自「诗云」· 多词库：考研(英一/二通用) / 英语四级 / 英语六级 / 高考 · 记忆闭环 + 主动学习/复习 + 每日任务 + 称号成就激励 + 学习统计 + 进度导入导出 + 分享卡 + 使用教学 + 移动端 · 作者个人站 vinjour.top · 本地化 three.js 无需 CDN -->
+<!-- 星云词汇 v2.0.0 · 灵感来自「诗云」· 多词库：考研(英一/二通用) / 英语四级 / 英语六级 / 高考 · 记忆闭环 + 主动学习/复习 + 每日任务 + 称号成就激励 + 学习统计 + 进度备份与恢复 + 分享卡 + 使用教学 + 移动端 · 作者个人站 vinjour.top · 本地化 three.js 无需 CDN -->
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root { --btn-gap: 10px; }
@@ -184,6 +184,16 @@
   #stats .lib { font-size: 12px; color: #c8cdf0; }
   #stats .libbar { height: 7px; border-radius: 4px; background: rgba(127,119,221,.16); margin-top: 5px; overflow: hidden; }
   #stats .libfill { height: 100%; background: linear-gradient(90deg,#7f77dd,#ffd24a); }
+  #stats .dsec { font-size: 12px; color: #9aa2cf; line-height: 1.6; margin-top: 18px; padding: 10px 12px; background: rgba(127,119,221,.08); border: 1px solid rgba(127,119,221,.16); border-radius: 11px; }
+  #stats .dsec b { color: #c8cdf0; }
+  #stats .drow { display: flex; gap: var(--btn-gap); margin-top: 10px; }
+  #stats .drow .qbtn { flex: 1; }
+  .dlg { position: absolute; inset: 0; z-index: 25; display: none; align-items: center; justify-content: center; background: rgba(3,4,12,.72); backdrop-filter: blur(6px); }
+  .dlg .dbox { width: 360px; max-width: 90vw; background: rgba(16,18,38,.98); border: 1px solid rgba(255,210,74,.4); border-radius: 18px; padding: 22px; position: relative; box-shadow: 0 20px 60px rgba(0,0,0,.5); }
+  .dlg .dh { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
+  .dlg .dd { font-size: 13.5px; color: #b8bfe8; line-height: 1.7; }
+  .dlg .drow2 { display: flex; gap: 10px; margin-top: 18px; }
+  .dlg .drow2 .qbtn { flex: 1; }
   @media (max-width: 640px){
     #title{display:block;top:100px;left:8px;bottom:auto}
     #title h1,#title .sub{display:none}
@@ -240,10 +250,7 @@
   <div class="hsep"></div>
   <div class="hrow">
     <button class="qbtn tool mini" id="statsBtn">📈 学习统计</button>
-    <button class="qbtn tool mini" id="exportBtn">⬇ 导出</button>
-    <button class="qbtn tool mini" id="importBtn">⬆ 导入</button>
   </div>
-  <input id="impFile" type="file" accept="application/json,.json" style="display:none">
   <button class="qbtn" id="quizBtn">🎯 主动学习</button>
   <button class="qbtn" id="reviewBtn">🔁 复习</button>
 </div>
@@ -314,8 +321,28 @@
     <span class="close" id="statsClose">×</span>
     <h2>📈 学习统计</h2>
     <div id="statsBody"></div>
+    <div class="dsec">🔒 学习记录只保存在这台设备。建议定期<b>备份进度</b>，换手机或清缓存后还能找回来。</div>
+    <div class="drow">
+      <button class="qbtn tool" id="backupBtn">💾 备份进度</button>
+      <button class="qbtn tool" id="restoreBtn">📂 恢复进度</button>
+    </div>
   </div>
 </div>
+<div id="bkDlg" class="panel dlg">
+  <div class="dbox">
+    <div class="dh">📦 备份学习进度</div>
+    <div class="dd">把你的点亮记录、记忆曲线、打卡，保存成一个文件存到这台手机 / 电脑里。<br>以后换设备或清了缓存，用「恢复进度」就能找回来。</div>
+    <div class="drow2"><button class="qbtn" id="bkOk">保存到文件</button><button class="qbtn tool" id="bkCancel">稍后</button></div>
+  </div>
+</div>
+<div id="rsDlg" class="panel dlg">
+  <div class="dbox">
+    <div class="dh">📂 恢复学习进度</div>
+    <div class="dd">从你之前备份的文件，把进度恢复到这台设备。<br><b style="color:#ff8a8a">注意：会覆盖当前设备的进度</b>，请先确认已备份当前进度。</div>
+    <div class="drow2"><button class="qbtn" id="rsOk">选择备份文件</button><button class="qbtn tool" id="rsCancel">取消</button></div>
+  </div>
+</div>
+<input id="impFile" type="file" accept="application/json,.json" style="display:none">
 <div id="tut" class="panel">
   <div class="box">
     <span class="close" id="tutClose">×</span>
