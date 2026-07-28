@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>星云词汇 · 考研/四级/六级/高考 3D 星空 v1.9.6</title>
-<!-- 星云词汇 v1.9.6 · 灵感来自「诗云」· 多词库：考研(英一/二通用) / 英语四级 / 英语六级 / 高考 · 记忆闭环 + 主动学习/复习 + 每日任务 + 称号成就激励 + 分享卡 + 使用教学 + 移动端 · 作者个人站 vinjour.top · 本地化 three.js 无需 CDN -->
+<title>星云词汇 · 考研/四级/六级/高考 3D 星空 v2.0.0</title>
+<!-- 星云词汇 v2.0.0 · 灵感来自「诗云」· 多词库：考研(英一/二通用) / 英语四级 / 英语六级 / 高考 · 记忆闭环 + 主动学习/复习 + 每日任务 + 称号成就激励 + 学习统计 + 进度导入导出 + 分享卡 + 使用教学 + 移动端 · 作者个人站 vinjour.top · 本地化 three.js 无需 CDN -->
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root { --btn-gap: 10px; }
@@ -33,6 +33,10 @@
   .qbtn.tool { margin-top: 0; border-color: rgba(127,119,221,.35); background: rgba(127,119,221,.12); color: #c8cdf0; font-weight: 500; }
   .qbtn.tool:hover { background: rgba(127,119,221,.28); color: #fff; }
   #hud .qbtn { margin-top: var(--btn-gap); }
+  #hud .qbtn:not(.tool) { background: linear-gradient(135deg,#ffd24a,#ffb347); color: #1a1405; border-color: rgba(255,210,74,.9); box-shadow: 0 0 14px rgba(255,210,74,.3); }
+  #hud .qbtn:not(.tool):hover { filter: brightness(1.08); box-shadow: 0 0 22px rgba(255,210,74,.5); }
+  #hud .hrow { display: flex; gap: var(--btn-gap); justify-content: flex-end; margin-top: var(--btn-gap); }
+  #hud .mini { padding: 6px 10px; font-size: 12px; }
   #leftTools { position: fixed; top: 148px; left: 16px; display: flex; flex-direction: column; gap: var(--btn-gap); z-index: 5; }
   #mediaBar { position: fixed; right: 18px; bottom: 22px; display: flex; align-items: center; gap: var(--btn-gap); z-index: 5; }
   #hud .day { font-size: 11px; color: #9aa2cf; margin-top: 16px; }
@@ -162,6 +166,24 @@
   #tut .nav .next { background: #7f77dd; color: #fff; }
   #tut .nav .next:hover { background: #948dea; }
   #tut .nav .prev:disabled { opacity: .4; cursor: default; }
+  #stats { position: absolute; inset: 0; z-index: 20; display: none; align-items: center; justify-content: center; background: rgba(3,4,12,.72); backdrop-filter: blur(6px); }
+  #stats .box { width: 440px; max-width: 92vw; max-height: 86vh; overflow-y: auto; background: rgba(16,18,38,.97); border: 1px solid rgba(127,119,221,.35); border-radius: 18px; padding: 24px; position: relative; box-shadow: 0 20px 60px rgba(0,0,0,.5); }
+  #stats .close { position: absolute; top: 12px; right: 16px; cursor: pointer; color: #6f77a6; font-size: 22px; }
+  #stats .close:hover { color: #fff; }
+  #stats h2 { font-size: 18px; margin-bottom: 14px; }
+  #stats .metrics { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 16px; }
+  #stats .m { padding: 12px; border-radius: 12px; background: rgba(127,119,221,.1); border: 1px solid rgba(127,119,221,.18); text-align: center; }
+  #stats .m .v { font-size: 22px; font-weight: 700; color: #ffd24a; }
+  #stats .m .k { font-size: 11px; color: #9aa2cf; margin-top: 4px; }
+  #stats .sec { font-size: 13px; color: #c8cdf0; margin: 14px 0 8px; }
+  #stats .trend7 { display: flex; align-items: flex-end; gap: 6px; height: 60px; padding: 0 2px; }
+  #stats .t7 { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end; }
+  #stats .t7fill { width: 100%; border-radius: 3px; background: linear-gradient(180deg,#ffd24a,#7f77dd); }
+  #stats .t7l { font-size: 9px; color: #6f77a6; }
+  #stats .libs { display: flex; flex-direction: column; gap: 9px; }
+  #stats .lib { font-size: 12px; color: #c8cdf0; }
+  #stats .libbar { height: 7px; border-radius: 4px; background: rgba(127,119,221,.16); margin-top: 5px; overflow: hidden; }
+  #stats .libfill { height: 100%; background: linear-gradient(90deg,#7f77dd,#ffd24a); }
   @media (max-width: 640px){
     #title{display:block;top:100px;left:8px;bottom:auto}
     #title h1,#title .sub{display:none}
@@ -198,8 +220,8 @@
 <div id="loading"><div class="spin"></div><div class="txt">正在生成词汇星空…</div></div>
 <div id="title" class="panel">
   <h1>星云词汇</h1>
-  <div class="sub">考研(英一/二通用) · 四级 · 六级 · 高考 · 主动学习 + 每日任务 · v1.9.6</div>
-  <a class="home" href="https://vinjour.top/" target="_blank" rel="noopener" title="作者个人站">🌐 作者个人站 · vinjour.top</a>
+  <div class="sub">考研(英一/二通用) · 四级 · 六级 · 高考 · 主动学习 + 每日任务 · v2.0.0</div>
+  <a class="home" href="https://vinjour.top/" target="_blank" rel="noopener" title="作者个人站">🌐 作者个人站 vinjour.top →</a>
 </div>
 <div id="libBar" class="panel"></div>
 <div id="search">
@@ -216,6 +238,12 @@
   <div class="day">📅 今日学习 <span id="dayLearned">0</span>/<span id="dayGoal">20</span> 词</div>
   <div class="daybar"><div class="dayfill" id="dayFill"></div></div>
   <div class="hsep"></div>
+  <div class="hrow">
+    <button class="qbtn tool mini" id="statsBtn">📈 学习统计</button>
+    <button class="qbtn tool mini" id="exportBtn">⬇ 导出</button>
+    <button class="qbtn tool mini" id="importBtn">⬆ 导入</button>
+  </div>
+  <input id="impFile" type="file" accept="application/json,.json" style="display:none">
   <button class="qbtn" id="quizBtn">🎯 主动学习</button>
   <button class="qbtn" id="reviewBtn">🔁 复习</button>
 </div>
@@ -279,6 +307,13 @@
     <div class="rankBar"><div class="rankFill" id="achRankFill"></div></div>
     <div class="rankNext" id="achRankNext"></div>
     <div class="grid" id="achGrid"></div>
+  </div>
+</div>
+<div id="stats" class="panel">
+  <div class="box">
+    <span class="close" id="statsClose">×</span>
+    <h2>📈 学习统计</h2>
+    <div id="statsBody"></div>
   </div>
 </div>
 <div id="tut" class="panel">

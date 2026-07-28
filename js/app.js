@@ -6,7 +6,7 @@ function loadError(msg) {
 window.addEventListener("error", ev => loadError(ev.message || "脚本运行出错"));
 if (typeof THREE === "undefined") { loadError("3D 引擎未加载（js/vendor/three.min.js 缺失或被拦截）"); throw new Error("THREE missing"); }
 
-const APP_VERSION = "1.9.6";
+const APP_VERSION = "2.0.0";
 const DAILY_GOAL = 20; // 每日任务目标词数（须在初始化 updateHud 前声明，避免 TDZ）
 const R = 640;                                   // 家族分布球壳半径
 const gold = new THREE.Color(0xffd24a);
@@ -402,7 +402,7 @@ function toggleStatusFilter(key) {
   if (!filterStatus) flyTo([0, 0, 900]);
 }
 function flyTo(p, keep) { flyTarget = new THREE.Vector3(p[0], p[1], p[2]); flying = true; controls.autoRotate = false; flyKeepTarget = !!keep; if (!keep) controls.target.set(0, 0, 0); }
-function flyToStar(i) { const s = core[i], p = new THREE.Vector3(s.x, s.y, s.z), d = p.clone().normalize(); controls.target.copy(p); flyTo([p.x + d.x * 200, p.y + d.y * 200, p.z + d.z * 200], true); }
+function flyToStar(i) { intro = 1; const s = core[i], p = new THREE.Vector3(s.x, s.y, s.z), d = p.clone().normalize(); controls.target.copy(p); flyTo([p.x + d.x * 200, p.y + d.y * 200, p.z + d.z * 200], true); }
 function toggleLit(i) {
   const s = core[i], w = s.word.w, on = !lit.has(w);
   setStarLit(i, on);
@@ -499,6 +499,51 @@ function openAch() {
   });
   document.getElementById("ach").style.display = "flex";
 }
+
+// ---------- 2.0 学习统计面板 + 进度导入/导出 ----------
+function openStats() {
+  const lit = allLit();
+  let mastered = 0, due = 0;
+  Object.keys(LIBRARIES).forEach(id => {
+    const sr = JSON.parse(localStorage.getItem(srKey(id)) || "{}"), litArr = JSON.parse(localStorage.getItem(litKey(id)) || "[]");
+    litArr.forEach(w => { const r = sr[w]; if (r) { if (r.s === 2) mastered++; if (r.s === 0 || r.due <= Date.now()) due++; } });
+  });
+  const streak = getStreak(), d = getDaily(), rankName = RANKS[rankOf(lit)][0];
+  const w = weekHistory(), max = Math.max(1, ...w.map(x => x.n)), wd = ["日", "一", "二", "三", "四", "五", "六"];
+  const libs = Object.keys(LIBRARIES).map(id => { const n = (JSON.parse(localStorage.getItem(litKey(id)) || "[]")).length, t = LIBRARIES[id].total; return { name: LIBRARIES[id].name, n, t, pct: t ? Math.round(n / t * 100) : 0 }; });
+  const m = (v, k) => `<div class="m"><div class="v">${v}</div><div class="k">${k}</div></div>`;
+  $("statsBody").innerHTML =
+    `<div class="metrics">${m(lit, "累计点亮")}${m(mastered, "已掌握")}${m(due, "待复习")}${m(streak, "连续打卡")}${m(d.learned + "/" + d.goal, "今日进度")}${m(rankName, "当前称号")}</div>` +
+    `<div class="sec">近 7 日学习趋势</div><div class="trend7">` +
+    w.map(x => `<div class="t7"><div class="t7fill" style="height:${x.n ? Math.max(6, Math.round(x.n / max * 48)) : 0}px"></div><div class="t7l">${wd[x.wd]}</div></div>`).join("") +
+    `</div><div class="sec">各词库进度</div><div class="libs">` +
+    libs.map(l => `<div class="lib">${l.name} · ${l.n}/${l.t}（${l.pct}%）<div class="libbar"><div class="libfill" style="width:${l.pct}%"></div></div></div>`).join("") +
+    `</div>`;
+  $("stats").style.display = "flex";
+}
+function exportProgress() {
+  const data = { __meta: { app: "星云词汇", version: APP_VERSION, exported: new Date().toISOString() } };
+  for (let i = localStorage.length - 1; i >= 0; i--) { const k = localStorage.key(i); if (k && k.startsWith("wordverse_")) { try { data[k] = JSON.parse(localStorage.getItem(k)); } catch (e) { data[k] = localStorage.getItem(k); } } }
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }), a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = "星云词汇进度_" + todayStr() + ".json"; a.click(); URL.revokeObjectURL(a.href);
+  toast("⬇ 进度已导出");
+}
+function importProgress(file) {
+  const r = new FileReader();
+  r.onload = () => { try {
+    const data = JSON.parse(r.result);
+    Object.keys(data).forEach(k => { if (k.startsWith("wordverse_") && k !== "__meta") localStorage.setItem(k, typeof data[k] === "string" ? data[k] : JSON.stringify(data[k])); });
+    toast("⬆ 进度已导入，正在刷新…");
+    setTimeout(() => { buildLibrary(cur); filterStatus = null; document.querySelectorAll("#legend .row").forEach(rw => rw.classList.toggle("on", (rw.dataset.status || "") === "")); recolor(); refreshLines(); flyTo([0, 0, 900]); }, 300);
+  } catch (e) { toast("导入失败：文件格式错误"); } };
+  r.readAsText(file);
+}
+$("statsBtn").onclick = openStats;
+$("statsClose").onclick = () => $("stats").style.display = "none";
+$("stats").addEventListener("click", e => { if (e.target.id === "stats") $("stats").style.display = "none"; });
+$("exportBtn").onclick = exportProgress;
+$("importBtn").onclick = () => $("impFile").click();
+$("impFile").addEventListener("change", e => { if (e.target.files[0]) importProgress(e.target.files[0]); e.target.value = ""; });
 
 // ---------- 背景天体（太阳/月亮/远景恒星，可开关，不干扰单词星）----------
 let celGroup=null, sunSprite=null, moonSprite=null, celHits=[];
